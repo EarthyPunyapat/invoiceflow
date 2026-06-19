@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// ─── Screens ─────────────────────────────────────────────────────────────
+// ─── Screens ─────────────────────────────────────────────────────────
 
 const SCREENS = [
   {
@@ -48,7 +48,7 @@ const SCREENS = [
   },
 ];
 
-// ─── Animated step content ────────────────────────────────────────────────
+// ─── Animated step content ───────────────────────────────────────────────────
 
 function StepContent({ screen }: { screen: (typeof SCREENS)[number] }) {
   return (
@@ -73,7 +73,7 @@ function StepContent({ screen }: { screen: (typeof SCREENS)[number] }) {
   );
 }
 
-// ─── Component ────────────────────────────────────────────────────────────
+// ─── Component ─────────────────────────────────────────────────────────────
 
 export function VideoLightbox({
   triggerClassName,
@@ -87,18 +87,45 @@ export function VideoLightbox({
   const [step, setStep] = useState(0);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const closeTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  // Saves the page scroll position so we can restore it on close.
+  const scrollYRef = useRef(0);
+
+  // position:fixed on <body> is the only scroll-lock that works on mobile
+  // Safari and Chrome. overflow:hidden on body is ignored by both.
+  // Setting top:0 (not -scrollY) intentionally scrolls the page to the top
+  // so the backdrop covers the hero section the modal is about.
+  const lockScroll = () => {
+    scrollYRef.current = window.scrollY;
+    const { style } = document.body;
+    style.position = "fixed";
+    style.top = "0";
+    style.left = "0";
+    style.right = "0";
+    style.width = "100%";
+    style.overflowY = "scroll"; // keep scrollbar gutter to avoid layout shift
+  };
+
+  const unlockScroll = () => {
+    const { style } = document.body;
+    style.position = "";
+    style.top = "";
+    style.left = "";
+    style.right = "";
+    style.width = "";
+    style.overflowY = "";
+    window.scrollTo(0, scrollYRef.current);
+  };
 
   const openModal = () => {
     setStep(0);
     setClosing(false);
+    lockScroll();
     setOpen(true);
-    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
-    document.body.style.overflow = "hidden";
   };
 
   const startClose = () => {
     setClosing(true);
-    document.body.style.overflow = "";
+    unlockScroll();
     if (timerRef.current) clearTimeout(timerRef.current);
     closeTimerRef.current = setTimeout(() => {
       setOpen(false);
@@ -120,12 +147,24 @@ export function VideoLightbox({
     };
   }, [open, closing, step]);
 
+  // Block touchmove on the document while the modal is open.
+  // React synthetic events are passive by default and cannot call
+  // preventDefault(), so we attach directly to the DOM with passive:false.
+  // This is the last line of defence against scroll-bleed on older iOS WebKit.
+  useEffect(() => {
+    if (!open) return;
+    const block = (e: TouchEvent) => e.preventDefault();
+    document.addEventListener("touchmove", block, { passive: false });
+    return () => document.removeEventListener("touchmove", block);
+  }, [open]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
-      document.body.style.overflow = "";
+      unlockScroll();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -201,7 +240,7 @@ export function VideoLightbox({
             {/* Footer */}
             <div className="flex items-center justify-between border-t border-gray-100 dark:border-gray-800 px-6 py-3 bg-gray-50/50 dark:bg-[#151518]/50">
               <p className="text-xs text-gray-400 dark:text-gray-500">
-                {step < SCREENS.length - 1 ? "Auto-advancing..." : "That's it!"}
+                {step < SCREENS.length - 1 ? "Auto-advancing..." : "That’s it!"}
               </p>
               {step < SCREENS.length - 1 ? (
                 <button
