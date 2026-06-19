@@ -1,0 +1,440 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════════
+   InvoiceFlow — Application Design System
+   Brand: Indigo #4F46E5 · Teal #0D9488
+   ═══════════════════════════════════════════════════════════════ */
+
+@layer base {
+  :root {
+    /* ── Brand Colors ── */
+    --color-primary: #4F46E5;
+    --color-primary-light: #6366F1;
+    --color-primary-dark: #4338CA;
+    --color-primary-50: #EEF2FF;
+    --color-primary-100: #E0E7FF;
+    --color-primary-200: #C7D2FE;
+    --color-primary-300: #A5B4FC;
+    --color-primary-400: #818CF8;
+    --color-primary-500: #6366F1;
+    --color-primary-600: #4F46E5;
+    --color-primary-700: #4338CA;
+    --color-primary-800: #3730A3;
+    --color-primary-900: #312E81;
+
+    --color-accent: #0D9488;
+    --color-accent-light: #14B8A6;
+    --color-accent-dark: #0F766E;
+    --color-accent-50: #F0FDFA;
+    --color-accent-100: #CCFBF1;
+    --color-accent-200: #99F6E4;
+    --color-accent-300: #5EEAD4;
+    --color-accent-400: #2DD4BF;
+    --color-accent-500: #14B8A6;
+    --color-accent-600: #0D9488;
+    --color-accent-700: #0F766E;
+    --color-accent-800: #115E59;
+    --color-accent-900: #134E4A;
+
+    /* ── Semantic Colors ── */
+    --color-success: #059669;
+    --color-success-light: #10B981;
+    --color-success-bg: #ECFDF5;
+    --color-warning: #D97706;
+    --color-warning-light: #F59E0B;
+    --color-warning-bg: #FFFBEB;
+    --color-danger: #DC2626;
+    --color-danger-light: #EF4444;
+    --color-danger-bg: #FEF2F2;
+    --color-info: #2563EB;
+    --color-info-light: #3B82F6;
+    --color-info-bg: #EFF6FF;
+
+    /* ── Surface Colors ── */
+    --color-bg: #FFFFFF;
+    --color-bg-alt: #F9FAFB;
+    --color-bg-raised: #FFFFFF;
+    --color-bg-overlay: rgba(255, 255, 255, 0.80);
+
+    /* ── Text Colors — WCAG AA minimum 4.5:1 ── */
+    --color-text-primary: #111827;
+    --color-text-secondary: #4B5563;
+    --color-text-muted: #9CA3AF;
+    --color-text-inverse: #FFFFFF;
+    --color-text-link: #4F46E5;
+
+    /* ── Border Colors ── */
+    --color-border: #E5E7EB;
+    --color-border-light: #F3F4F6;
+    --color-border-strong: #D1D5DB;
+    --color-border-focus: #4F46E5;
+
+    /* ── Glass Panel Tokens ── */
+    --glass-bg: rgba(255, 255, 255, 0.72);
+    --glass-bg-strong: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.60);
+    --glass-blur: 20px;
+    --glass-blur-strong: 32px;
+    --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+    --glass-shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.04), 0 10px 40px rgba(0, 0, 0, 0.06);
+
+    /* ── Shadow Tokens ── */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.04);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.05), 0 4px 6px rgba(0, 0, 0, 0.04);
+    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.05), 0 8px 10px rgba(0, 0, 0, 0.04);
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+    --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.04);
+
+    /* ── Border Radius Tokens ── */
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-2xl: 20px;
+    --radius-3xl: 24px;
+    --radius-full: 9999px;
+
+    /* ── Spacing Rhythm ── */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-6: 24px;
+    --space-8: 32px;
+
+    /* ── Typography Scale (Inter) ── */
+    --text-xs: 12px;
+    --text-sm: 14px;
+    --text-base: 16px;
+    --text-lg: 18px;
+    --text-xl: 20px;
+    --text-2xl: 24px;
+    --text-3xl: 32px;
+    --text-4xl: 40px;
+    --text-5xl: 48px;
+
+    /* ── Animation / Motion ── */
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --duration-instant: 50ms;
+    --duration-fast: 150ms;
+    --duration-normal: 200ms;
+    --duration-slow: 300ms;
+  }
+
+  /* ── Dark Mode Overrides (media query — prefers-color-scheme) ── */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-bg: #0A0A0B;
+      --color-bg-alt: #111114;
+      --color-bg-raised: #1A1A1E;
+      --color-bg-overlay: rgba(10, 10, 11, 0.80);
+
+      --color-text-primary: #FAFAFA;
+      --color-text-secondary: #A1A1AA;
+      --color-text-muted: #71717A;
+      --color-text-link: #818CF8;
+
+      --color-border: #27272A;
+      --color-border-light: #1F1F23;
+      --color-border-strong: #3F3F46;
+      --color-border-focus: #818CF8;
+
+      --glass-bg: rgba(26, 26, 30, 0.72);
+      --glass-bg-strong: rgba(26, 26, 30, 0.88);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.20), 0 1px 2px rgba(0, 0, 0, 0.24);
+      --glass-shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.20), 0 10px 40px rgba(0, 0, 0, 0.32);
+
+      --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.24);
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.30);
+      --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.30);
+      --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.30);
+      --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.30);
+
+      --color-success-bg: rgba(5, 150, 105, 0.12);
+      --color-warning-bg: rgba(217, 119, 6, 0.12);
+      --color-danger-bg: rgba(220, 38, 38, 0.12);
+      --color-info-bg: rgba(37, 99, 235, 0.12);
+    }
+  }
+
+  /* ── Global Reset & Base ── */
+  *,
+  *::before,
+  *::after {
+    border-color: var(--color-border);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    font-family: 'Inter', var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: var(--text-base);
+    line-height: 1.6;
+    color: var(--color-text-primary);
+    background-color: var(--color-bg);
+  }
+
+  /* ── Headings ── */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    color: var(--color-text-primary);
+  }
+
+  /* ── Reduced Motion ── */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Demo Modal Animations
+   ═══════════════════════════════════════════════════════════════ */
+
+@keyframes modal-backdrop-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes modal-card-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.88) translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes modal-card-exit {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+}
+
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); }
+  70%  { box-shadow: 0 0 0 12px rgba(79, 70, 229, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+}
+
+.animate-backdrop-fade {
+  animation: modal-backdrop-fade 250ms var(--ease-out) forwards;
+}
+
+.animate-card-enter {
+  animation: modal-card-enter 350ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+.animate-card-exit {
+  animation: modal-card-exit 200ms var(--ease-out) forwards;
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Component Utilities — Glass Panels, Cards, Interactive States
+   ═══════════════════════════════════════════════════════════════ */
+
+@layer components {
+  /* ── Glass Panel — Subtle frosted glass surface ── */
+  .glass-panel {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    box-shadow: var(--glass-shadow);
+    border-radius: var(--radius-2xl);
+  }
+
+  .glass-panel-strong {
+    background: var(--glass-bg-strong);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(var(--glass-blur-strong));
+    -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+    box-shadow: var(--glass-shadow-lg);
+    border-radius: var(--radius-2xl);
+  }
+
+  /* ── Card — Elevated content container ── */
+  .card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-card);
+    transition:
+      box-shadow var(--duration-normal) var(--ease-out),
+      transform var(--duration-normal) var(--ease-out);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .card-hover:hover {
+      box-shadow: var(--shadow-card-hover);
+      transform: translateY(-2px);
+    }
+  }
+
+  /* ── Interactive Element States ── */
+  .interactive-focus:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* ── Button Base — Shared interactive button styles ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    font-weight: 600;
+    border-radius: var(--radius-lg);
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      box-shadow var(--duration-fast) var(--ease-out),
+      transform var(--duration-fast) var(--ease-out),
+      opacity var(--duration-fast) var(--ease-out);
+    cursor: pointer;
+  }
+
+  .btn:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+  }
+
+  .btn:active {
+    transform: scale(0.98);
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+  }
+
+  /* ── Link Underline Animation ── */
+  .link-underline {
+    position: relative;
+    text-decoration: none;
+  }
+
+  .link-underline::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 1.5px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .link-underline:hover::after {
+      transform: scaleX(1);
+      transform-origin: left;
+    }
+  }
+
+  /* ── Status Badge ── */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    line-height: 1.4;
+  }
+
+  /* ── Table Row ── */
+  .table-row-interactive {
+    transition: background-color var(--duration-fast) var(--ease-out);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .table-row-interactive:hover {
+      background-color: var(--color-bg-alt);
+    }
+  }
+
+  .table-row-interactive:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: -2px;
+    border-radius: var(--radius-sm);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Utility Extensions
+   ═══════════════════════════════════════════════════════════════ */
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Scrollbar styling */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-strong) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: var(--color-border-strong);
+    border-radius: var(--radius-full);
+  }
+
+  /* Ring for focus — accessible outline alternative */
+  .ring-focus {
+    --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+    --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+    box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+  }
+}
