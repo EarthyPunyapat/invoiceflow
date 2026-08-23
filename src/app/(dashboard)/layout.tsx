@@ -38,6 +38,7 @@ export default async function DashboardLayout({
               <div className="p-4">
                 <div className="flex items-center gap-3">
                   {session?.user?.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- Google avatar: external URL, next/image needs remotePatterns config
                     <img
                       src={session.user.image}
                       alt=""
@@ -93,6 +94,7 @@ export default async function DashboardLayout({
               </Link>
               <div className="flex items-center gap-2.5 pl-4 border-l border-gray-200 dark:border-gray-800">
                 {session?.user?.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- Google avatar: external URL, next/image needs remotePatterns config
                   <img
                     src={session.user.image}
                     alt=""

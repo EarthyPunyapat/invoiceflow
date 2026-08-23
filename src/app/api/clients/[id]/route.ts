@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { clientUpdateSchema } from "@/lib/validators/clients";
 
 export async function GET(
   req: NextRequest,
@@ -38,7 +39,14 @@ export async function PATCH(
   }
 
   try {
-    const body = await req.json();
+    const parsed = clientUpdateSchema.safeParse(await req.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message || "Invalid request" },
+        { status: 400 }
+      );
+    }
+    const data = parsed.data;
 
     const existing = await prisma.client.findFirst({
       where: { id: params.id, userId: session.user.id },
@@ -50,19 +58,10 @@ export async function PATCH(
 
     const updateData: Record<string, unknown> = {};
 
-    if (body.name !== undefined) updateData.name = body.name;
-    if (body.email !== undefined) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(body.email)) {
-        return NextResponse.json(
-          { error: "Invalid email format" },
-          { status: 400 }
-        );
-      }
-      updateData.email = body.email;
-    }
-    if (body.company !== undefined) updateData.company = body.company;
-    if (body.phone !== undefined) updateData.phone = body.phone;
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.email !== undefined) updateData.email = data.email;
+    if (data.company !== undefined) updateData.company = data.company;
+    if (data.phone !== undefined) updateData.phone = data.phone;
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json(

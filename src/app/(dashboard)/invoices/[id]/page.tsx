@@ -16,13 +16,26 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
   const session = await auth();
   if (!session?.user?.id) return null;
 
-  const invoice = await prisma.invoice.findFirst({
-    where: { id: params.id, userId: session.user.id },
-    include: {
-      client: true,
-      items: { orderBy: { createdAt: "asc" } },
-    },
-  });
+  // Invoice + issuer branding fetched together; the From block renders
+  // the saved business profile so it matches emails & share pages.
+  const [invoice, viewer] = await Promise.all([
+    prisma.invoice.findFirst({
+      where: { id: params.id, userId: session.user.id },
+      include: {
+        client: true,
+        items: { orderBy: { createdAt: "asc" } },
+      },
+    }),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        name: true,
+        businessName: true,
+        logoUrl: true,
+        accentColor: true,
+      },
+    }),
+  ]);
 
   if (!invoice) {
     return (
@@ -45,6 +58,15 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
   const taxAmount = (invoice.subtotal * invoice.tax) / 100;
   const canSend = invoice.status === "DRAFT";
   const canMarkPaid = invoice.status === "SENT" || invoice.status === "OVERDUE";
+
+  // Issuer branding with safe fallbacks; accent color only applied when
+  // it's a well-formed hex value so arbitrary strings never reach inline styles.
+  const issuerName =
+    viewer?.businessName || viewer?.name || "InvoiceFlow";
+  const accent =
+    viewer?.accentColor && /^#[0-9a-fA-F]{6}$/.test(viewer.accentColor)
+      ? viewer.accentColor
+      : undefined;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -87,9 +109,19 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
             <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
               From
             </h3>
-            <p className="text-sm font-medium text-gray-900 dark:text-white">
-              InvoiceFlow
-            </p>
+            <div className="flex items-center gap-2.5">
+              {viewer?.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- issuer-uploaded external logo URL; next/image would need remotePatterns config
+                <img
+                  src={viewer.logoUrl}
+                  alt={issuerName}
+                  className="w-8 h-8 rounded-md object-cover border border-gray-200 dark:border-gray-700"
+                />
+              ) : null}
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                {issuerName}
+              </p>
+            </div>
           </div>
           <div>
             <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
@@ -167,8 +199,11 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
           </table>
         </div>
 
-        {/* Totals */}
-        <div className="border-t border-gray-200 dark:border-gray-700 px-5 py-4 flex flex-col items-end space-y-1.5">
+        {/* Totals — total row carries the brand accent when set */}
+        <div
+          className="border-t-2 border-gray-200 dark:border-gray-700 px-5 py-4 flex flex-col items-end space-y-1.5"
+          style={accent ? { borderTopColor: accent } : undefined}
+        >
           <div className="flex justify-between w-56 text-sm">
             <span className="text-gray-500 dark:text-gray-400">Subtotal</span>
             <span className="text-gray-900 dark:text-white">
@@ -187,7 +222,7 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
           )}
           <div className="flex justify-between w-56 text-base font-bold pt-2 border-t border-gray-200 dark:border-gray-700">
             <span className="text-gray-900 dark:text-white">Total</span>
-            <span className="text-gray-900 dark:text-white">
+            <span style={accent ? { color: accent } : undefined}>
               {formatCurrency(invoice.total, invoice.currency)}
             </span>
           </div>

@@ -1,6 +1,8 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/lib/utils";
+import { bucketOutstanding } from "@/lib/aging";
+import { AgingReport } from "@/components/aging-report";
 import Link from "next/link";
 import {
   FileText,
@@ -17,7 +19,7 @@ export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user?.id) return null;
 
-  const [invoiceStats, clientCount, recentInvoices] = await Promise.all([
+  const [invoiceStats, clientCount, recentInvoices, outstandingInvoices] = await Promise.all([
     prisma.invoice.groupBy({
       by: ["status"],
       where: { userId: session.user.id },
@@ -30,6 +32,13 @@ export default async function DashboardPage() {
       include: { client: { select: { name: true, company: true } } },
       orderBy: { createdAt: "desc" },
       take: 5,
+    }),
+    prisma.invoice.findMany({
+      where: {
+        userId: session.user.id,
+        status: { in: ["SENT", "OVERDUE"] },
+      },
+      select: { total: true, dueDate: true, status: true },
     }),
   ]);
 
@@ -192,6 +201,9 @@ export default async function DashboardPage() {
           </div>
         ))}
       </div>
+
+      {/* ─── Aging Report — Outstanding by age bucket ─── */}
+      <AgingReport buckets={bucketOutstanding(outstandingInvoices, new Date())} />
 
       {/* ─── Recent Invoices — Glass panel table ─── */}
       <div className="glass-panel overflow-hidden">

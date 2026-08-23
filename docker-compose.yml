@@ -1,0 +1,24 @@
+# Local PostgreSQL for InvoiceFlow development.
+# Credentials match DATABASE_URL in .env.example:
+#   postgresql://postgres:postgres@localhost:5432/invoiceflow?schema=public
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: invoiceflow-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: invoiceflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - invoiceflow-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d invoiceflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  invoiceflow-pgdata:

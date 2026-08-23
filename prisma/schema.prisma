@@ -15,14 +15,29 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
 
-  accounts         Account[]
-  sessions         Session[]
-  clients          Client[]
-  invoices         Invoice[]
-  stripeAccount    StripeAccount?
+  // Business profile (branding & invoice customization)
+  businessName String?
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  state        String?
+  postalCode   String?
+  country      String?
+  logoUrl      String?
+  accentColor  String?
+  invoicePrefix String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts          Account[]
+  sessions          Session[]
+  clients           Client[]
+  invoices          Invoice[]
+  stripeAccount     StripeAccount?
+  recurringInvoices RecurringInvoice[]
+  estimates         Estimate[]
 }
 
 model Account {
@@ -74,6 +89,8 @@ model Client {
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   invoices Invoice[]
+  recurringInvoices RecurringInvoice[]
+  estimates         Estimate[]
 }
 
 enum InvoiceStatus {
@@ -89,6 +106,7 @@ model Invoice {
   userId        String
   clientId      String
   invoiceNumber String
+  shareToken    String?       @unique
   status        InvoiceStatus @default(DRAFT)
   subtotal      Float
   tax           Float         @default(0)
@@ -128,4 +146,74 @@ model StripeAccount {
   createdAt                       DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Recurring Invoices ──────────────────────────────────────────
+
+enum RecurringFrequency {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  YEARLY
+}
+
+model RecurringInvoice {
+  id              String             @id @default(cuid())
+  userId          String
+  clientId        String
+  sourceInvoiceId String?
+  name            String
+  frequency       RecurringFrequency
+  nextRunAt       DateTime
+  paused          Boolean            @default(false)
+  endDate         DateTime?
+  notes           String?            @db.Text
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+// ─── Estimates ───────────────────────────────────────────────────
+
+enum EstimateStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  DECLINED
+  CONVERTED
+}
+
+model Estimate {
+  id             String         @id @default(cuid())
+  userId         String
+  clientId       String
+  estimateNumber String         @unique
+  status         EstimateStatus @default(DRAFT)
+  issueDate      DateTime?
+  expiryDate     DateTime?
+  subtotal       Float
+  tax            Float          @default(0)
+  total          Float
+  currency       String         @default("USD")
+  notes          String?        @db.Text
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  items  EstimateItem[]
+}
+
+model EstimateItem {
+  id          String  @id @default(cuid())
+  estimateId  String
+  description String
+  quantity    Int     @default(1)
+  unitPrice   Float
+  total       Float
+  createdAt   DateTime @default(now())
+
+  estimate Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
 }

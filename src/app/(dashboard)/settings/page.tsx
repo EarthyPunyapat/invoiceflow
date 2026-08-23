@@ -3,15 +3,33 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Settings, User, CreditCard, Zap, ExternalLink } from "lucide-react";
 import { StripeConnectButton } from "./stripe-connect-button";
+import { ProfileForm } from "./profile-form";
 
 export default async function SettingsPage() {
   const session = await auth();
   if (!session?.user?.id) return null;
 
-  // Check if user has connected Stripe
-  const stripeAccount = await prisma.stripeAccount.findUnique({
-    where: { userId: session.user.id },
-  });
+  // Check if user has connected Stripe + load their business profile
+  const [stripeAccount, profile] = await Promise.all([
+    prisma.stripeAccount.findUnique({
+      where: { userId: session.user.id },
+    }),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        businessName: true,
+        addressLine1: true,
+        addressLine2: true,
+        city: true,
+        state: true,
+        postalCode: true,
+        country: true,
+        logoUrl: true,
+        accentColor: true,
+        invoicePrefix: true,
+      },
+    }),
+  ]);
 
   const stripeConnected = stripeAccount?.stripeConnectOnboardingComplete ?? false;
 
@@ -50,6 +68,7 @@ export default async function SettingsPage() {
         </h2>
         <div className="flex items-center gap-4">
           {session?.user?.image ? (
+            // eslint-disable-next-line @next/next/no-img-element -- Google avatar: external URL, next/image needs remotePatterns config
             <img
               src={session.user.image}
               alt=""
@@ -71,6 +90,32 @@ export default async function SettingsPage() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Business profile (branding shown on invoices & emails) */}
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
+        <h2 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+          Business profile
+        </h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
+          Branding shown on your invoices, share links and reminder emails.
+        </p>
+        <ProfileForm
+          profile={
+            profile ?? {
+              businessName: null,
+              addressLine1: null,
+              addressLine2: null,
+              city: null,
+              state: null,
+              postalCode: null,
+              country: null,
+              logoUrl: null,
+              accentColor: null,
+              invoicePrefix: null,
+            }
+          }
+        />
       </div>
 
       {/* Stripe Connect Section */}

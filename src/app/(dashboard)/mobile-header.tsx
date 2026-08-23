@@ -6,7 +6,9 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   FileText,
+  FileCheck,
   Users,
+  BarChart3,
   Settings,
   LogOut,
   Menu,
@@ -18,7 +20,9 @@ import { Logo } from "@/components/logo";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/invoices", label: "Invoices", icon: FileText },
+  { href: "/estimates", label: "Estimates", icon: FileCheck },
   { href: "/clients", label: "Clients", icon: Users },
+  { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -93,6 +97,7 @@ export function MobileHeader({ user }: { user: { name?: string | null; email?: s
               <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-800">
                 <div className="flex items-center gap-3 mb-3">
                   {user.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- Google avatar: external URL, next/image needs remotePatterns config
                     <img src={user.image} alt="" className="w-8 h-8 rounded-full" />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getResend } from "@/lib/resend";
+import { generateShareToken } from "@/lib/token";
 
 // POST /api/invoices/[id]/send — send invoice email and mark as SENT
 export async function POST(
@@ -82,12 +83,13 @@ export async function POST(
       );
     }
 
-    // Mark as SENT
+    // Mark as SENT and issue a share token (for the public /i/[token] page)
     const updated = await prisma.invoice.update({
       where: { id },
       data: {
         status: "SENT",
         sentAt: new Date(),
+        shareToken: invoice.shareToken ?? generateShareToken(),
       },
       include: {
         client: { select: { id: true, name: true, email: true, company: true } },
@@ -98,6 +100,9 @@ export async function POST(
     return NextResponse.json({
       data: updated,
       emailId: data?.id,
+      shareUrl: updated.shareToken
+        ? `${process.env.NEXT_PUBLIC_APP_URL || ""}/i/${updated.shareToken}`
+        : null,
       message: "Invoice sent successfully",
     });
   } catch (error) {

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { buildInvoiceWhere, parseListParams } from "@/lib/invoice-filters";
 
 const STATUS_FILTERS = [
   { value: "", label: "All" },
@@ -31,22 +32,21 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
   if (!session?.user?.id) return null;
 
   const status = (searchParams.status as string) || "";
-  const search = (searchParams.search as string) || "";
-  const page = parseInt((searchParams.page as string) || "1");
-  const limit = 20;
-  const skip = (page - 1) * limit;
+  const search =
+    (searchParams.q as string) || (searchParams.search as string) || "";
 
-  const where: any = { userId: session.user.id };
-  if (status && status !== "ALL") {
-    where.status = status;
-  }
-  if (search) {
-    where.OR = [
-      { invoiceNumber: { contains: search, mode: "insensitive" } },
-      { client: { name: { contains: search, mode: "insensitive" } } },
-      { client: { company: { contains: search, mode: "insensitive" } } },
-    ];
-  }
+  // Shared pure helpers — identical filter/pagination semantics to
+  // GET /api/invoices so the page and the API can never drift apart.
+  const { page, pageSize } = parseListParams(
+    (searchParams.page as string) || null,
+    "20"
+  );
+  const skip = (page - 1) * pageSize;
+
+  const where = buildInvoiceWhere(session.user.id, {
+    q: search || null,
+    status: status || null,
+  });
 
   const [invoices, total] = await Promise.all([
     prisma.invoice.findMany({
@@ -54,12 +54,12 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
       include: { client: { select: { id: true, name: true, company: true } } },
       orderBy: { createdAt: "desc" },
       skip,
-      take: limit,
+      take: pageSize,
     }),
     prisma.invoice.count({ where }),
   ]);
 
-  const totalPages = Math.ceil(total / limit);
+  const totalPages = Math.ceil(total / pageSize);
 
   function buildUrl(newParams: Record<string, string>) {
     const params = new URLSearchParams();

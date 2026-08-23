@@ -1,0 +1,42 @@
+name: CI
+
+# Fast feedback gate: push to main and pull requests targeting main.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    # NOTE: No database service is provisioned for this job. Nothing in this
+    # pipeline connects to Postgres -- `prisma generate` is codegen only --
+    # so a dummy DATABASE_URL satisfies Prisma's env lookup without a server.
+    env:
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/invoiceflow?schema=public"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      # `next build` is intentionally NOT run in CI: it needs runtime secrets
+      # (Stripe/Resend/NextAuth) that are not available here. Compile safety
+      # is already covered by `npx tsc --noEmit` above.
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Unit tests
+        run: npm run test --if-present

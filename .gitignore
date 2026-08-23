@@ -18,6 +18,8 @@ build/
 *.pem
 .vscode/
 *.local
+.opencode/
+tsconfig.tsbuildinfo
 
 # debug
 npm-debug.log*

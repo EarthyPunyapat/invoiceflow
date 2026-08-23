@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import {
+  clientCreateSchema,
+  clientUpdateSchema,
+} from "@/lib/validators/clients";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -58,15 +62,14 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const body = await req.json();
-    const { name, email, company, phone } = body;
-
-    if (!name || !email) {
+    const parsed = clientCreateSchema.safeParse(await req.json());
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Name and email are required" },
+        { error: parsed.error.issues[0]?.message || "Invalid request" },
         { status: 400 }
       );
     }
+    const { name, email, company, phone } = parsed.data;
 
     const client = await prisma.client.create({
       data: {

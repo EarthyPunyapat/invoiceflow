@@ -299,7 +299,7 @@ export default function LandingPage() {
 
             {/* ── AGITATE PAIN + OFFER RELIEF ── */}
             <p className="mt-6 text-balance text-lg leading-relaxed text-gray-600 dark:text-gray-400 sm:text-xl">
-              Every hour you spend on manual invoices is an hour you're not
+              Every hour you spend on manual invoices is an hour you&apos;re not
               billing clients. InvoiceFlow auto-generates branded invoices from
               Stripe instantly — so you stop losing money to paperwork and start
               getting paid.
@@ -472,7 +472,7 @@ export default function LandingPage() {
               Everything you need to get paid
             </h2>
             <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
-              Stop doing paperwork. Start doing what you're actually paid for.
+              Stop doing paperwork. Start doing what you&apos;re actually paid for.
             </p>
           </div>
 
@@ -706,7 +706,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
-              Got questions? We've got answers.
+              Got questions? We&apos;ve got answers.
             </h2>
             <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
               Everything you need to know before you start

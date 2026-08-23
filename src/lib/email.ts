@@ -27,7 +27,7 @@ async function getInvoiceWithRelations(invoiceId: string) {
     where: { id: invoiceId },
     include: {
       client: true,
-      user: { select: { email: true, name: true } },
+      user: { select: { email: true, name: true, businessName: true } },
     },
   });
 
@@ -44,7 +44,8 @@ export async function sendInvoiceEmail(invoiceId: string) {
   const invoice = await getInvoiceWithRelations(invoiceId);
 
   const invoiceUrl = `${BASE_URL}/invoices/${invoice.id}`;
-  const businessName = invoice.user.name || "InvoiceFlow";
+  const businessName =
+    invoice.user.businessName || invoice.user.name || "InvoiceFlow";
 
   const html = await render(
     InvoiceEmail({
@@ -110,7 +111,8 @@ export async function sendPaymentReminder(
   );
 
   const invoiceUrl = `${BASE_URL}/invoices/${invoice.id}`;
-  const businessName = invoice.user.name || "InvoiceFlow";
+  const businessName =
+    invoice.user.businessName || invoice.user.name || "InvoiceFlow";
 
   const html = await render(
     PaymentReminder({
