@@ -7,6 +7,8 @@ import {
   Send,
   CheckCircle,
   Download,
+  FileDown,
+  Link,
   Loader2,
   Trash2,
 } from "lucide-react";
@@ -26,6 +28,7 @@ export function InvoiceActions({
 }: InvoiceActionsProps) {
   const router = useRouter();
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
 
   const handleStatusChange = async (newStatus: string) => {
@@ -78,8 +81,82 @@ export function InvoiceActions({
     }
   };
 
+  // Opens the server-rendered PDF instead of relying on print stylesheets.
   const handleDownloadPDF = () => {
-    window.print();
+    window.open(`/api/invoices/${invoiceId}/pdf`, "_blank");
+  };
+
+  // Issues (or reuses) the public share token, then copies the link.
+  // Clipboard access can be denied outside secure contexts, so fall back
+  // to a manual prompt rather than dead-ending the user.
+  const handleCopyLink = async () => {
+    setError("");
+    setActionLoading("SHARE");
+
+    let url = "";
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}/share`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to create share link");
+      }
+      url = data.url as string;
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+      setActionLoading(null);
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      window.prompt("Copy your invoice link:", url);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Opens the server-rendered PDF in a new tab (GET /api/invoices/[id]/pdf).
+  const handleDownloadRealPdf = () => {
+    window.open(`/api/invoices/${invoiceId}/pdf`, "_blank", "noopener");
+  };
+
+  // Ensures a shareToken exists (POST /api/invoices/[id]/share) and copies
+  // the public link. Falls back to window.prompt when the Clipboard API is
+  // unavailable (e.g. insecure contexts).
+  const handleCopyShareLink = async () => {
+    setActionLoading("SHARE");
+    setError("");
+
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}/share`, {
+        method: "POST",
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to create share link");
+      }
+
+      const { url } = await res.json();
+
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        window.prompt("Copy your invoice link:", url);
+      }
+
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   return (
@@ -119,10 +196,46 @@ export function InvoiceActions({
             Mark Paid
           </Button>
         )}
+        <Button variant="outline" size="sm" onClick={handleDownloadRealPdf}>
+          <FileDown className="w-4 h-4 mr-1.5" />
+          Download PDF
+        </Button>
+        {(status === "SENT" || status === "OVERDUE") && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCopyShareLink}
+            disabled={actionLoading === "SHARE"}
+          >
+            {actionLoading === "SHARE" ? (
+              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+            ) : copied ? (
+              <CheckCircle className="w-4 h-4 mr-1.5" />
+            ) : (
+              <Link className="w-4 h-4 mr-1.5" />
+            )}
+            {copied ? "Copied!" : "Copy Public Link"}
+          </Button>
+        )}
         <Button variant="ghost" size="sm" onClick={handleDownloadPDF}>
           <Download className="w-4 h-4 mr-1.5" />
           PDF
         </Button>
+        {(status === "SENT" || status === "OVERDUE") && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCopyLink}
+            disabled={actionLoading === "SHARE"}
+          >
+            {actionLoading === "SHARE" ? (
+              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+            ) : (
+              <Link className="w-4 h-4 mr-1.5" />
+            )}
+            {copied ? "Link copied" : "Copy link"}
+          </Button>
+        )}
         {status === "DRAFT" && (
           <Button
             variant="danger"
