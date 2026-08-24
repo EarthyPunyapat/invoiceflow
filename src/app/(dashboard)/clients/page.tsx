@@ -9,6 +9,7 @@ import {
   Mail,
   Building2,
   Search,
+  FileSpreadsheet,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -102,12 +103,20 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
             {total} client{total !== 1 ? "s" : ""}
           </p>
         </div>
-        <Link href="/clients/new">
-          <Button>
-            <Plus className="w-4 h-4 mr-1.5" />
-            New Client
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <a href="/api/export/clients">
+            <Button variant="outline">
+              <FileSpreadsheet className="w-4 h-4 mr-1.5" />
+              Export CSV
+            </Button>
+          </a>
+          <Link href="/clients/new">
+            <Button>
+              <Plus className="w-4 h-4 mr-1.5" />
+              New Client
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Search */}

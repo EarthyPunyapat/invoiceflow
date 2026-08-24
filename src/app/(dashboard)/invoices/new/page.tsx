@@ -162,7 +162,10 @@ export default function NewInvoicePage() {
       </div>
 
       {error && (
-        <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-600 dark:text-red-400">
+        <div
+          aria-live="polite"
+          className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-600 dark:text-red-400"
+        >
           {error}
         </div>
       )}
@@ -187,20 +190,28 @@ export default function NewInvoicePage() {
             ]}
           />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label
+              htmlFor="invoiceDate"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
               Invoice Date
             </label>
             <Input
+              id="invoiceDate"
               type="date"
               value={invoiceDate}
               onChange={(e) => setInvoiceDate(e.target.value)}
             />
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label
+              htmlFor="dueDate"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
               Due Date
             </label>
             <Input
+              id="dueDate"
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
@@ -221,10 +232,14 @@ export default function NewInvoicePage() {
             ]}
           />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label
+              htmlFor="taxRate"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
               Tax Rate (%)
             </label>
             <Input
+              id="taxRate"
               type="number"
               min="0"
               max="100"
@@ -264,10 +279,14 @@ export default function NewInvoicePage() {
               className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 items-start p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50"
             >
               <div className="sm:col-span-5">
-                <label className="sm:hidden text-xs font-medium text-gray-500 dark:text-gray-400">
+                <label
+                  htmlFor={`description-${item.id}`}
+                  className="sm:hidden text-xs font-medium text-gray-500 dark:text-gray-400"
+                >
                   Description
                 </label>
                 <Input
+                  id={`description-${item.id}`}
                   placeholder="Item description"
                   value={item.description}
                   onChange={(e) =>
@@ -277,10 +296,14 @@ export default function NewInvoicePage() {
               </div>
               <div className="sm:col-span-2 grid grid-cols-2 sm:block gap-2">
                 <div>
-                  <label className="sm:hidden text-xs font-medium text-gray-500 dark:text-gray-400">
+                  <label
+                    htmlFor={`qty-${item.id}`}
+                    className="sm:hidden text-xs font-medium text-gray-500 dark:text-gray-400"
+                  >
                     Qty
                   </label>
                   <Input
+                    id={`qty-${item.id}`}
                     type="number"
                     min="1"
                     value={item.quantity}
@@ -294,10 +317,14 @@ export default function NewInvoicePage() {
                   />
                 </div>
                 <div className="sm:hidden">
-                  <label className="sm:hidden text-xs font-medium text-gray-500 dark:text-gray-400">
+                  <label
+                    htmlFor={`price-${item.id}`}
+                    className="sm:hidden text-xs font-medium text-gray-500 dark:text-gray-400"
+                  >
                     Price
                   </label>
                   <Input
+                    id={`price-${item.id}`}
                     type="number"
                     min="0"
                     step="0.01"
@@ -314,6 +341,7 @@ export default function NewInvoicePage() {
               </div>
               <div className="hidden sm:block sm:col-span-2">
                 <Input
+                  aria-label="Unit price"
                   type="number"
                   min="0"
                   step="0.01"
@@ -340,6 +368,7 @@ export default function NewInvoicePage() {
                   type="button"
                   onClick={() => removeItem(item.id)}
                   disabled={items.length <= 1}
+                  aria-label="Remove item"
                   className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />

@@ -8,6 +8,7 @@ import {
   Plus,
   Search,
   FileText,
+  FileSpreadsheet,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -89,12 +90,20 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
             {total} invoice{total !== 1 ? "s" : ""}
           </p>
         </div>
-        <Link href="/invoices/new">
-          <Button>
-            <Plus className="w-4 h-4 mr-1.5" />
-            New Invoice
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <a href="/api/export/invoices">
+            <Button variant="outline">
+              <FileSpreadsheet className="w-4 h-4 mr-1.5" />
+              Export CSV
+            </Button>
+          </a>
+          <Link href="/invoices/new">
+            <Button>
+              <Plus className="w-4 h-4 mr-1.5" />
+              New Invoice
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}

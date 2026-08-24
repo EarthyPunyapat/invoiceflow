@@ -143,10 +143,14 @@ export default function NewEstimatePage() {
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              <label
+                htmlFor="client"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+              >
                 Client *
               </label>
               <Select
+                id="client"
                 value={clientId}
                 onChange={(e) => setClientId(e.target.value)}
                 required
@@ -160,10 +164,14 @@ export default function NewEstimatePage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              <label
+                htmlFor="issueDate"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+              >
                 Issue date
               </label>
               <Input
+                id="issueDate"
                 type="date"
                 value={issueDate}
                 onChange={(e) => setIssueDate(e.target.value)}

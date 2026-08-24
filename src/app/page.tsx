@@ -15,13 +15,30 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { Logo } from "@/components/logo";
 import { InteractiveCostCalculator } from "@/components/interactive-cost-calculator";
-import { VideoLightbox } from "@/components/video-lightbox";
-import { LiveSocialProofCounter } from "@/components/live-social-proof";
 import { ComparisonTable } from "@/components/comparison-table";
-import { ExitIntentPopup } from "@/components/exit-intent-popup";
 import { PricingToggleSection } from "@/components/pricing-toggle-section";
+
+/* Below-fold / interaction-gated widgets are code-split so their JS
+   stays out of the initial landing bundle. Hero and pricing-area
+   widgets remain static imports on purpose (never behind a spinner). */
+const VideoLightbox = dynamic(
+  () => import("@/components/video-lightbox").then((m) => m.VideoLightbox),
+  { loading: () => null }
+);
+const LiveSocialProofCounter = dynamic(
+  () =>
+    import("@/components/live-social-proof").then(
+      (m) => m.LiveSocialProofCounter
+    )
+);
+const ExitIntentPopup = dynamic(
+  () =>
+    import("@/components/exit-intent-popup").then((m) => m.ExitIntentPopup),
+  { loading: () => null }
+);
 
 /* ------------------------------------------------------------------ */
 /*  Inline test ID helper — strips out at build time                  */
