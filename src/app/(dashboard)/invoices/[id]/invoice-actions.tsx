@@ -45,8 +45,8 @@ export function InvoiceActions({
       }
 
       router.refresh();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setActionLoading(null);
     }
@@ -72,8 +72,8 @@ export function InvoiceActions({
 
       router.push("/invoices");
       router.refresh();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
       setActionLoading(null);
     }
   };

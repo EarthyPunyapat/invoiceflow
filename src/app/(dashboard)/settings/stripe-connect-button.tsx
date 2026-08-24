@@ -21,8 +21,8 @@ export function StripeConnectButton() {
       } else {
         throw new Error(data.error || "Failed to start Stripe Connect");
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
       setLoading(false);
     }
   };

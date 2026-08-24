@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
           where: { notes: stripeInvoice.id },
         });
         if (existingInvoice) {
-          console.log(`[STRIPE_WEBHOOK] Invoice with Stripe ID ${stripeInvoice.id} already exists. Skipping creation.`);
+          console.warn(`[STRIPE_WEBHOOK] Invoice with Stripe ID ${stripeInvoice.id} already exists. Skipping creation.`);
           return NextResponse.json({ received: true });
         }
 
@@ -203,7 +203,7 @@ export async function POST(req: NextRequest) {
               paidAt: paidAt,
             },
           });
-          console.log(`[STRIPE_WEBHOOK] Invoice ${invoiceFlowId} marked as PAID by metadata`);
+          console.warn(`[STRIPE_WEBHOOK] Invoice ${invoiceFlowId} marked as PAID by metadata`);
 
           if (updateResult.count > 0) {
             try {
@@ -223,7 +223,7 @@ export async function POST(req: NextRequest) {
               paidAt: paidAt,
             },
           });
-          console.log(`[STRIPE_WEBHOOK] Invoice marked as PAID by Stripe invoice ID in notes: ${stripeInvoiceId}`);
+          console.warn(`[STRIPE_WEBHOOK] Invoice marked as PAID by Stripe invoice ID in notes: ${stripeInvoiceId}`);
 
           if (updateResult.count > 0) {
             const invoice = await prisma.invoice.findFirst({
@@ -266,7 +266,7 @@ export async function POST(req: NextRequest) {
                 paidAt: paidAt,
               },
             });
-            console.log(`[STRIPE_WEBHOOK] Invoice ${invoiceFlowId} marked as PAID via payment_intent.succeeded by metadata`);
+            console.warn(`[STRIPE_WEBHOOK] Invoice ${invoiceFlowId} marked as PAID via payment_intent.succeeded by metadata`);
 
             if (updateResult.count > 0) {
               try {
@@ -286,7 +286,7 @@ export async function POST(req: NextRequest) {
                 paidAt: paidAt,
               },
             });
-            console.log(`[STRIPE_WEBHOOK] Invoice marked as PAID via payment_intent.succeeded by Stripe invoice ID in notes: ${stripeInvoiceId}`);
+            console.warn(`[STRIPE_WEBHOOK] Invoice marked as PAID via payment_intent.succeeded by Stripe invoice ID in notes: ${stripeInvoiceId}`);
 
             if (updateResult.count > 0) {
               const invoice = await prisma.invoice.findFirst({
@@ -313,7 +313,7 @@ export async function POST(req: NextRequest) {
             where: { userId: account.metadata.invoiceFlowUserId },
             data: { stripeConnectOnboardingComplete: account.charges_enabled },
           });
-          console.log(
+          console.warn(
             `[STRIPE_WEBHOOK] Stripe account ${account.id} onboarding status updated to ${account.charges_enabled} for user ${account.metadata.invoiceFlowUserId}`
           );
         }
@@ -321,7 +321,7 @@ export async function POST(req: NextRequest) {
       }
 
       default:
-        console.log(`[STRIPE_WEBHOOK] Unhandled event type: ${event.type}`);
+        console.warn(`[STRIPE_WEBHOOK] Unhandled event type: ${event.type}`);
     }
 
     return NextResponse.json({ received: true });

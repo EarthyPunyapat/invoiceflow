@@ -57,9 +57,15 @@ export default function NewEstimatePage() {
   const taxAmount = subtotal * ((tax || 0) / 100);
   const total = subtotal + taxAmount;
 
-  const updateItem = (id: string, field: keyof LineItem, value: any) => {
+  const updateItem = <K extends keyof LineItem>(
+    id: string,
+    field: K,
+    value: LineItem[K]
+  ) => {
     setItems(
-      items.map((item) => (item.id === id ? { ...item, [field]: value } : item))
+      items.map((item) =>
+        item.id === id ? ({ ...item, [field]: value } as LineItem) : item
+      )
     );
   };
 

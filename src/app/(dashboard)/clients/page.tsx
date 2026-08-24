@@ -8,9 +8,13 @@ import {
   Mail,
   Building2,
   Search,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+import type { Prisma } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { parseListParams } from "@/lib/invoice-filters";
 
 interface ClientsPageProps {
   searchParams: { [key: string]: string | string[] | undefined };
@@ -20,9 +24,18 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
   const session = await auth();
   if (!session?.user?.id) return null;
 
-  const search = (searchParams.search as string) || "";
+  const search =
+    (searchParams.q as string) || (searchParams.search as string) || "";
 
-  const where: any = { userId: session.user.id };
+  // Shared pure helper — identical pagination semantics to /invoices so
+  // list behavior can never drift between pages.
+  const { page, pageSize } = parseListParams(
+    (searchParams.page as string) || null,
+    "20"
+  );
+  const skip = (page - 1) * pageSize;
+
+  const where: Prisma.ClientWhereInput = { userId: session.user.id };
   if (search) {
     where.OR = [
       { name: { contains: search, mode: "insensitive" } },
@@ -31,19 +44,33 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
     ];
   }
 
-  const clients = await prisma.client.findMany({
-    where,
-    include: {
-      invoices: {
-        select: {
-          id: true,
-          status: true,
-          total: true,
+  const [clients, total] = await Promise.all([
+    prisma.client.findMany({
+      where,
+      include: {
+        invoices: {
+          select: {
+            id: true,
+            status: true,
+            total: true,
+          },
         },
       },
-    },
-    orderBy: { name: "asc" },
-  });
+      orderBy: { name: "asc" },
+      skip,
+      take: pageSize,
+    }),
+    prisma.client.count({ where }),
+  ]);
+
+  const totalPages = Math.ceil(total / pageSize);
+
+  function buildUrl(newParams: Record<string, string>) {
+    const params = new URLSearchParams();
+    if (search) params.set("q", search);
+    if (newParams.page) params.set("page", newParams.page);
+    return `/clients?${params.toString()}`;
+  }
 
   const clientsWithStats = clients.map((client) => ({
     ...client,
@@ -67,7 +94,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
             Clients
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {clientsWithStats.length} client{clientsWithStats.length !== 1 ? "s" : ""}
+            {total} client{total !== 1 ? "s" : ""}
           </p>
         </div>
         <Link href="/clients/new">
@@ -82,7 +109,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
       <form action="/clients" method="GET" className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <Input
-          name="search"
+          name="q"
           placeholder="Search clients..."
           defaultValue={search}
           className="pl-9"
@@ -94,14 +121,20 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
         <div className="text-center py-16">
           <Users className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600" />
           <h2 className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">
-            {search ? "No matching clients" : "No clients yet"}
+            {search
+              ? "No matching clients"
+              : total > 0
+              ? "No clients on this page"
+              : "No clients yet"}
           </h2>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             {search
               ? "Try a different search term"
+              : total > 0
+              ? "Go back a page to see the rest of your clients"
               : "Add your first client to start creating invoices"}
           </p>
-          {!search && (
+          {!search && total === 0 && (
             <Link
               href="/clients/new"
               className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
@@ -177,6 +210,43 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
               </div>
             </Link>
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Page {page} of {totalPages}
+          </p>
+          <div className="flex gap-2">
+            {page > 1 ? (
+              <Link href={buildUrl({ page: String(page - 1) })}>
+                <Button variant="outline" size="sm">
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </Button>
+              </Link>
+            ) : (
+              <Button variant="outline" size="sm" disabled>
+                <ChevronLeft className="w-4 h-4" />
+                Previous
+              </Button>
+            )}
+            {page < totalPages ? (
+              <Link href={buildUrl({ page: String(page + 1) })}>
+                <Button variant="outline" size="sm">
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            ) : (
+              <Button variant="outline" size="sm" disabled>
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
         </div>
       )}
     </div>

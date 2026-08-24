@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { EstimateStatus, Prisma } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import Link from "next/link";
@@ -60,8 +61,14 @@ export default async function EstimatesPage({ searchParams }: EstimatesPageProps
   );
   const skip = (page - 1) * pageSize;
 
-  const where: any = { userId: session.user.id };
-  if (status && status !== "ALL") where.status = status;
+  const where: Prisma.EstimateWhereInput = { userId: session.user.id };
+  if (
+    status &&
+    status !== "ALL" &&
+    STATUS_FILTERS.some((f) => f.value === status)
+  ) {
+    where.status = status as EstimateStatus;
+  }
   if (search.trim()) {
     where.OR = [
       { estimateNumber: { contains: search, mode: "insensitive" } },

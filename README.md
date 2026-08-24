@@ -62,6 +62,8 @@ Opens at `http://localhost:3000`.
 | `STRIPE_WEBHOOK_SECRET` | For webhooks | Verifies `POST /api/webhooks/stripe` signatures |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | For payments | Client-side Stripe |
 | `RESEND_API_KEY` | For email | Invoice delivery + reminders (send fails gracefully when unset) |
+| `RESEND_FROM_EMAIL` | For email | From address on outgoing invoice/reminder emails |
+| `FREELANCER_NOTIFY_EMAIL` | Recommended | Your inbox for payment/activity notifications |
 | `INNGEST_EVENT_KEY` / `INNGEST_SIGNING_KEY` | Optional | Reserved for future background-job integration — not read by current code |
 | `NEXT_PUBLIC_APP_URL` | Recommended | Absolute URLs in emails / share links |
 | `CRON_SECRET` | For cron | Bearer token required by both `/api/cron/*` routes |
