@@ -91,6 +91,8 @@ model Client {
   invoices Invoice[]
   recurringInvoices RecurringInvoice[]
   estimates         Estimate[]
+
+  @@index([userId])
 }
 
 enum InvoiceStatus {
@@ -124,6 +126,10 @@ model Invoice {
   user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   client Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
   items  InvoiceItem[]
+
+  @@index([userId])
+  @@index([clientId])
+  @@index([status, dueDate])
 }
 
 model InvoiceItem {
@@ -136,6 +142,8 @@ model InvoiceItem {
   createdAt   DateTime @default(now())
 
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
 }
 
 model StripeAccount {
@@ -173,6 +181,9 @@ model RecurringInvoice {
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sourceInvoiceId])
 }
 
 // ─── Estimates ───────────────────────────────────────────────────
@@ -204,6 +215,9 @@ model Estimate {
   user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   client Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
   items  EstimateItem[]
+
+  @@index([userId])
+  @@index([clientId])
 }
 
 model EstimateItem {
