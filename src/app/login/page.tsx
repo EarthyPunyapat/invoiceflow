@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import { auth, signIn } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Logo, LogoIcon } from "@/components/logo";
+
+export const metadata: Metadata = {
+  title: "Sign in",
+};
 
 export default async function LoginPage() {
   const session = await auth();

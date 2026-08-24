@@ -1,9 +1,14 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Settings, User, CreditCard, Zap, ExternalLink } from "lucide-react";
 import { StripeConnectButton } from "./stripe-connect-button";
 import { ProfileForm } from "./profile-form";
+
+export const metadata: Metadata = {
+  title: "Settings",
+};
 
 export default async function SettingsPage() {
   const session = await auth();

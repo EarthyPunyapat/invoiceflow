@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -10,6 +11,25 @@ import { InvoiceActions } from "./invoice-actions";
 
 interface InvoiceDetailPageProps {
   params: { id: string };
+}
+
+// Auth-gated dynamic title. Metadata resolves outside the page's own
+// session guard, so query defensively: generic label on missing session,
+// unowned record, or any transient failure.
+export async function generateMetadata({
+  params,
+}: InvoiceDetailPageProps): Promise<Metadata> {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) return { title: "Invoice" };
+    const record = await prisma.invoice.findFirst({
+      where: { id: params.id, userId: session.user.id },
+      select: { invoiceNumber: true },
+    });
+    return { title: record?.invoiceNumber ?? "Invoice" };
+  } catch {
+    return { title: "Invoice" };
+  }
 }
 
 export default async function InvoiceDetailPage({ params }: InvoiceDetailPageProps) {

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { EstimateStatus, Prisma } from "@prisma/client";
@@ -43,6 +44,10 @@ function estimateStatusVariant(status: string) {
 interface EstimatesPageProps {
   searchParams: { [key: string]: string | string[] | undefined };
 }
+
+export const metadata: Metadata = {
+  title: "Estimates",
+};
 
 export default async function EstimatesPage({ searchParams }: EstimatesPageProps) {
   const session = await auth();

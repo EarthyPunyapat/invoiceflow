@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/lib/utils";
@@ -19,6 +20,10 @@ import { parseListParams } from "@/lib/invoice-filters";
 interface ClientsPageProps {
   searchParams: { [key: string]: string | string[] | undefined };
 }
+
+export const metadata: Metadata = {
+  title: "Clients",
+};
 
 export default async function ClientsPage({ searchParams }: ClientsPageProps) {
   const session = await auth();

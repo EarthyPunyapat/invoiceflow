@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Badge, statusVariant } from "@/components/ui/badge";
@@ -26,6 +27,10 @@ const STATUS_FILTERS = [
 interface InvoicesPageProps {
   searchParams: { [key: string]: string | string[] | undefined };
 }
+
+export const metadata: Metadata = {
+  title: "Invoices",
+};
 
 export default async function InvoicesPage({ searchParams }: InvoicesPageProps) {
   const session = await auth();

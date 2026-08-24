@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,25 @@ import { EstimateActions } from "./estimate-actions";
 
 interface EstimateDetailPageProps {
   params: { id: string };
+}
+
+// Auth-gated dynamic title. Metadata resolves outside the page's own
+// session guard, so query defensively: generic label on missing session,
+// unowned record, or any transient failure.
+export async function generateMetadata({
+  params,
+}: EstimateDetailPageProps): Promise<Metadata> {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) return { title: "Estimate" };
+    const record = await prisma.estimate.findFirst({
+      where: { id: params.id, userId: session.user.id },
+      select: { estimateNumber: true },
+    });
+    return { title: record?.estimateNumber ?? "Estimate" };
+  } catch {
+    return { title: "Estimate" };
+  }
 }
 
 export default async function EstimateDetailPage({
