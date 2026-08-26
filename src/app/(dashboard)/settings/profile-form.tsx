@@ -25,6 +25,10 @@ const HEX_RE = /^#[0-9a-fA-F]{6}$/;
 const URL_RE = /^https?:\/\/\S+$/;
 const PREFIX_RE = /^[A-Z0-9]*$/;
 const FALLBACK_ACCENT = "#2563eb";
+// Mirrors the looser accent gating on public share pages (/i/[token])
+// so the live preview shows exactly what clients will see. Save-time
+// validation above stays strict ({6}) per the server zod contract.
+const PREVIEW_HEX_RE = /^#[0-9a-fA-F]{3,8}$/;
 
 function toFormState(p: BusinessProfile) {
   return {
@@ -134,45 +138,19 @@ export function ProfileForm({ profile }: { profile: BusinessProfile }) {
   const previewName = form.businessName.trim() || "Your business";
   const previewLogo = form.logoUrl.trim();
   const showLogoImage = logoValid && previewLogo !== "";
+  // Preview-only accent gate mirrors the PUBLIC share page (/i/[token]):
+  // undefined means neutral styling with inline styles omitted — exactly
+  // how the public page renders an absent/invalid accent.
+  const previewHex = PREVIEW_HEX_RE.test(accentTrimmed)
+    ? accentTrimmed
+    : undefined;
+  const previewPrefix = form.invoicePrefix.trim().toUpperCase() || "INV";
 
   const labelClass =
     "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {/* Live branding preview */}
-      <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/40 p-4">
-        <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
-          Preview
-        </p>
-        <div className="flex items-center gap-3">
-          {showLogoImage ? (
-            // eslint-disable-next-line @next/next/no-img-element -- issuer-uploaded external logo URL; next/image would need remotePatterns config
-            <img
-              src={previewLogo}
-              alt=""
-              className="w-10 h-10 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
-            />
-          ) : (
-            <div
-              className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-sm font-bold"
-              style={{ backgroundColor: previewAccent }}
-            >
-              {previewName.charAt(0).toUpperCase()}
-            </div>
-          )}
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-              {previewName}
-            </p>
-            <div
-              className="h-1 w-24 mt-1.5 rounded-full transition-colors"
-              style={{ backgroundColor: previewAccent }}
-            />
-          </div>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="sm:col-span-2">
           <label htmlFor="businessName" className={labelClass}>
@@ -328,6 +306,75 @@ export function ProfileForm({ profile }: { profile: BusinessProfile }) {
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
             Numbering looks like {form.invoicePrefix.trim() || "INV"}-202608-0001. Defaults to INV when empty.
           </p>
+        </div>
+      </div>
+
+      {/* Live branding preview — mirrors how clients see invoices on the
+          public share page (/i/[token]). Re-renders instantly from the
+          same form state as the fields above. */}
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+        <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">
+          Live preview
+        </p>
+
+        {/* Invoice header: logo, business name, example number */}
+        <div className="flex items-center justify-between gap-4 pb-4 border-b border-gray-200 dark:border-gray-800">
+          <div className="flex items-center gap-4 min-w-0">
+            {showLogoImage ? (
+              // eslint-disable-next-line @next/next/no-img-element -- issuer-uploaded external logo URL; next/image would need remotePatterns config
+              <img
+                src={previewLogo}
+                alt={previewName}
+                className="w-12 h-12 rounded-lg object-cover shrink-0"
+              />
+            ) : (
+              <div
+                className="w-12 h-12 rounded-lg flex items-center justify-center text-white text-lg font-bold shrink-0"
+                style={{ backgroundColor: previewAccent }}
+              >
+                {previewName.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div className="min-w-0">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white truncate">
+                {previewName}
+              </h3>
+              <div
+                className="h-1 w-20 mt-1 rounded-full transition-colors"
+                style={{ backgroundColor: previewHex ?? FALLBACK_ACCENT }}
+              />
+            </div>
+          </div>
+          <div className="text-right shrink-0">
+            <p
+              className="text-xs font-medium uppercase tracking-wider"
+              style={{ color: previewHex }}
+            >
+              Invoice
+            </p>
+            <p className="text-sm font-semibold text-gray-900 dark:text-white font-mono">
+              {previewPrefix}-0042
+            </p>
+          </div>
+        </div>
+
+        {/* Sample total line — accent applied only when the hex passes the
+            public-page rule; otherwise neutral gray styling, exactly like
+            /i/[token] renders an absent or invalid accent color. */}
+        <div className="pt-3 flex flex-col items-end space-y-1">
+          <div className="flex justify-between w-52 text-sm">
+            <span className="text-gray-500 dark:text-gray-400">Subtotal</span>
+            <span className="text-gray-900 dark:text-white">$1,250.00</span>
+          </div>
+          <div
+            className="flex justify-between w-52 text-base font-bold pt-2 border-t-2"
+            style={{ borderTopColor: previewHex }}
+          >
+            <span className="text-gray-900 dark:text-white">Total</span>
+            <span style={previewHex ? { color: previewHex } : undefined}>
+              $1,375.00
+            </span>
+          </div>
         </div>
       </div>
 

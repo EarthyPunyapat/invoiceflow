@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { monthPrefix, nextSequence } from "@/lib/invoice-number";
+import {
+  monthPrefix,
+  sanitizeInvoicePrefix,
+  nextInvoiceNumber,
+} from "@/lib/invoice-number";
 import {
   applyTaxPercent,
   centsToDollars,
@@ -94,15 +98,30 @@ export async function POST(req: NextRequest) {
     const subtotal = centsToDollars(subtotalCents);
     const total = centsToDollars(totalCents);
 
-    // Generate invoice number (INV-YYYYMM-XXXX)
-    const prefix = monthPrefix(new Date());
+    // Generate invoice number — honors settings.invoicePrefix ("PFX-0001"),
+    // falling back to the default INV-YYYYMM-XXXX scheme. The sequence
+    // lookup is scoped to this user AND to the same scheme pattern, so a
+    // custom prefix never continues the default count and per-user
+    // sequences stay independent (see invoice-number.ts for the
+    // race-condition caveat).
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { invoicePrefix: true },
+    });
+    const scheme = sanitizeInvoicePrefix(user?.invoicePrefix);
+    const schemePattern = scheme ? `${scheme}-` : monthPrefix(new Date());
     const lastInvoice = await prisma.invoice.findFirst({
-      where: { invoiceNumber: { startsWith: prefix } },
+      where: {
+        userId: session.user.id,
+        invoiceNumber: { startsWith: schemePattern },
+      },
       orderBy: { invoiceNumber: "desc" },
     });
-    const invoiceNumber = `${prefix}-${String(
-      nextSequence(lastInvoice?.invoiceNumber ?? null)
-    ).padStart(4, "0")}`;
+    const invoiceNumber = nextInvoiceNumber({
+      prefix: scheme,
+      date: new Date(),
+      lastNumber: lastInvoice?.invoiceNumber ?? null,
+    });
 
     const invoice = await prisma.invoice.create({
       data: {

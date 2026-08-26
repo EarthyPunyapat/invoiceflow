@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import {
+  monthPrefix,
+  sanitizeInvoicePrefix,
+  nextInvoiceNumber,
+} from "@/lib/invoice-number";
 
 /**
  * POST /api/estimates/[id]/convert
@@ -47,22 +52,29 @@ export async function POST(
     }
 
     const invoice = await prisma.$transaction(async (tx) => {
-      // Invoice number (INV-YYYYMM-XXXX), same scheme as the invoices API.
+      // Same numbering as POST /api/invoices: honors the owner's
+      // settings.invoicePrefix ("PFX-0001"), falls back to the default
+      // INV-YYYYMM-XXXX scheme. Lookup is owner-scoped and scheme-scoped
+      // (see invoice-number.ts for the scoping decision + caveat).
       const now = new Date();
-      const prefix = `INV-${now.getFullYear()}${String(
-        now.getMonth() + 1
-      ).padStart(2, "0")}`;
+      const owner = await tx.user.findUnique({
+        where: { id: estimate.userId },
+        select: { invoicePrefix: true },
+      });
+      const scheme = sanitizeInvoicePrefix(owner?.invoicePrefix);
+      const schemePattern = scheme ? `${scheme}-` : monthPrefix(now);
       const lastInvoice = await tx.invoice.findFirst({
-        where: { invoiceNumber: { startsWith: prefix } },
+        where: {
+          userId: estimate.userId,
+          invoiceNumber: { startsWith: schemePattern },
+        },
         orderBy: { invoiceNumber: "desc" },
       });
-      const parsed = parseInt(
-        lastInvoice?.invoiceNumber.split("-").pop() || "",
-        10
-      );
-      const invoiceNumber = `${prefix}-${String(
-        Number.isNaN(parsed) ? 1 : parsed + 1
-      ).padStart(4, "0")}`;
+      const invoiceNumber = nextInvoiceNumber({
+        prefix: scheme,
+        date: now,
+        lastNumber: lastInvoice?.invoiceNumber ?? null,
+      });
 
       // Due date: 30 days from now (standard terms on conversion).
       const dueDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);

@@ -10,6 +10,7 @@ export interface SelectProps
 
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   ({ className, label, error, options, id, ...props }, ref) => {
+    const errorId = id ? `${id}-error` : undefined;
     return (
       <div className="space-y-1">
         {label && (
@@ -25,6 +26,8 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           )}
           ref={ref}
           {...props}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
         >
           {options.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -32,7 +35,11 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             </option>
           ))}
         </select>
-        {error && <p className="text-sm text-red-500">{error}</p>}
+        {error && (
+          <p id={errorId} aria-live="polite" className="text-sm text-red-500">
+            {error}
+          </p>
+        )}
       </div>
     );
   }
