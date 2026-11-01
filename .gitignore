@@ -38,3 +38,6 @@ yarn-error.log*
 
 # prisma
 prisma/generated/
+.neon
+.vercel
+.env*
