@@ -200,7 +200,10 @@ export default function HomePage() {
       <footer className="marketing-footer">
         <Logo size={32} />
         <p>Made for the work you do.</p>
-        <a href="#product">Back to top</a>
+        <nav className="marketing-footer-links" aria-label="Footer">
+          <Link href="/api-docs">API for agents</Link>
+          <a href="#product">Back to top</a>
+        </nav>
       </footer>
     </div>
   );
