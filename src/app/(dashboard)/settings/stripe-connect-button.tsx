@@ -4,7 +4,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, ExternalLink } from "lucide-react";
 
-export function StripeConnectButton() {
+export function StripeConnectButton({
+  label = "Connect Stripe Account",
+}: {
+  label?: string;
+}) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -30,7 +34,9 @@ export function StripeConnectButton() {
   return (
     <div>
       {error && (
-        <p className="text-xs text-red-600 dark:text-red-400 mb-2">{error}</p>
+        <p role="alert" className="text-xs text-red-600 dark:text-red-400 mb-2">
+          {error}
+        </p>
       )}
       <Button onClick={handleConnect} disabled={loading} size="sm">
         {loading ? (
@@ -38,7 +44,7 @@ export function StripeConnectButton() {
         ) : (
           <ExternalLink className="w-4 h-4 mr-1.5" />
         )}
-        Connect Stripe Account
+        {label}
       </Button>
     </div>
   );

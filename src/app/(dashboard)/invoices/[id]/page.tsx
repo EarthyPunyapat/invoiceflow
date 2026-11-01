@@ -1,17 +1,16 @@
+import { getPaymentReadiness } from "@/lib/stripe-account";
 import { Badge, statusVariant } from "@/components/ui/badge";
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  FileText,
-} from "lucide-react";
+import { ArrowLeft, FileText } from "lucide-react";
 import { InvoiceActions } from "./invoice-actions";
 
 interface InvoiceDetailPageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ email?: string }>;
 }
 
 // Auth-gated dynamic title. Metadata resolves outside the page's own
@@ -34,7 +33,10 @@ export async function generateMetadata({
   }
 }
 
-export default async function InvoiceDetailPage({ params: paramsPromise }: InvoiceDetailPageProps) {
+export default async function InvoiceDetailPage({
+  params: paramsPromise,
+  searchParams,
+}: InvoiceDetailPageProps) {
   const params = await paramsPromise;
   const session = await auth();
   if (!session?.user?.id) return null;
@@ -78,14 +80,15 @@ export default async function InvoiceDetailPage({ params: paramsPromise }: Invoi
     );
   }
 
+  const emailNotice = (await searchParams).email;
+  const payment = await getPaymentReadiness(session.user.id);
   const taxAmount = (invoice.subtotal * invoice.tax) / 100;
   const canSend = invoice.status === "DRAFT";
   const canMarkPaid = invoice.status === "SENT" || invoice.status === "OVERDUE";
 
   // Issuer branding with safe fallbacks; accent color only applied when
   // it's a well-formed hex value so arbitrary strings never reach inline styles.
-  const issuerName =
-    viewer?.businessName || viewer?.name || "InvoiceFlow";
+  const issuerName = viewer?.businessName || viewer?.name || "InvoiceFlow";
   const accent =
     viewer?.accentColor && /^#[0-9a-fA-F]{6}$/.test(viewer.accentColor)
       ? viewer.accentColor
@@ -122,9 +125,43 @@ export default async function InvoiceDetailPage({ params: paramsPromise }: Invoi
           status={invoice.status}
           canSend={canSend}
           canMarkPaid={canMarkPaid}
+          emailSentAt={invoice.invoiceEmailedAt?.toISOString() || null}
         />
       </div>
 
+      {emailNotice && !invoice.invoiceEmailedAt && (
+        <div
+          role="alert"
+          className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+        >
+          Your invoice was saved, but the email was not sent.{" "}
+          {emailNotice === "not-configured"
+            ? "Email delivery needs setup in this deployment. "
+            : "Use Send invoice to retry and see the delivery error. "}
+          <Link href="/settings" className="font-medium underline">
+            Check delivery settings
+          </Link>
+        </div>
+      )}
+      <section
+        aria-label="Delivery and payments"
+        className="rounded-lg bg-gray-50 p-4 text-sm"
+      >
+        <p>
+          {invoice.invoiceEmailedAt
+            ? `Email submitted for delivery on ${formatDate(invoice.invoiceEmailedAt)}.`
+            : "This invoice has not been emailed."}
+        </p>
+        {["DRAFT", "SENT", "OVERDUE"].includes(invoice.status) &&
+          payment.state !== "ready" && (
+            <p className="mt-2 text-gray-600">
+              {payment.message}{" "}
+              <Link href="/settings" className="font-medium underline">
+                Payment settings
+              </Link>
+            </p>
+          )}
+      </section>
       {/* Invoice Details Card */}
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
         <div className="grid grid-cols-2 gap-6">
@@ -268,5 +305,9 @@ export default async function InvoiceDetailPage({ params: paramsPromise }: Invoi
 }
 
 function InvoiceStatusBadge({ status }: { status: string }) {
-  return <Badge variant={statusVariant(status)}>{status.charAt(0) + status.slice(1).toLowerCase()}</Badge>;
+  return (
+    <Badge variant={statusVariant(status)}>
+      {status.charAt(0) + status.slice(1).toLowerCase()}
+    </Badge>
+  );
 }

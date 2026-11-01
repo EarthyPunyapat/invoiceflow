@@ -13,3 +13,5 @@ Preserve working financial behavior, ownership checks, public invoice links, key
 Use Node22 and pinned pnpm. Verify changes with lint, typecheck, relevant unit/integration tests, a production build and actual browser workflows (`pnpm run test:browser`). Database and browser tests require only the disposable local invoiceflow_test database. Never point them at production. CI runs Chromium workflows after building.
 
 The current redesign is being completed without delegation, as requested. Production releases go through GitHub main and Vercel's linked integration, not a direct sandbox deployment.
+
+Save & Send must create a draft and call the delivery endpoint. A manually issued SENT state is separate from provider acceptance (`invoiceEmailedAt`). Never mark an email accepted without a provider receipt. Stripe charges require live account readiness; cached onboarding flags alone are insufficient. Browser provider fixtures are test-only, require the disposable local database, and must never be imported into application code.

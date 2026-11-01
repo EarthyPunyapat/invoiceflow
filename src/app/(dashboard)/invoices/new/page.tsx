@@ -7,14 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { ClientPicker } from "@/components/client-picker";
 import { formatCurrency } from "@/lib/utils";
-import {
-  Plus,
-  Trash2,
-  ArrowLeft,
-  Loader2,
-  Send,
-  Save,
-} from "lucide-react";
+import { Plus, Trash2, ArrowLeft, Loader2, Send, Save } from "lucide-react";
 import Link from "next/link";
 
 interface LineItem {
@@ -29,11 +22,11 @@ export default function NewInvoicePage() {
   const [clientId, setClientId] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [invoiceDate, setInvoiceDate] = useState(
-    new Date().toISOString().split("T")[0]
+    new Date().toISOString().split("T")[0],
   );
   const [tax, setTax] = useState(0);
   const [dueDate, setDueDate] = useState(
-    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
   );
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<LineItem[]>([
@@ -44,7 +37,7 @@ export default function NewInvoicePage() {
 
   const subtotal = items.reduce(
     (sum, item) => sum + item.quantity * item.unitPrice,
-    0
+    0,
   );
   const taxAmount = (subtotal * tax) / 100;
   const total = subtotal + taxAmount;
@@ -64,12 +57,12 @@ export default function NewInvoicePage() {
   const updateItem = (
     id: string,
     field: keyof LineItem,
-    value: string | number
+    value: string | number,
   ) => {
     setItems(
       items.map((item) =>
-        item.id === id ? { ...item, [field]: value } : item
-      )
+        item.id === id ? { ...item, [field]: value } : item,
+      ),
     );
   };
 
@@ -83,10 +76,13 @@ export default function NewInvoicePage() {
       return false;
     }
     const invalidItems = items.filter(
-      (item) => !item.description.trim() || item.quantity <= 0 || item.unitPrice <= 0
+      (item) =>
+        !item.description.trim() || item.quantity <= 0 || item.unitPrice <= 0,
     );
     if (invalidItems.length > 0) {
-      setError("All line items must have a description, quantity > 0, and price > 0");
+      setError(
+        "All line items must have a description, quantity > 0, and price > 0",
+      );
       return false;
     }
     setError("");
@@ -109,7 +105,7 @@ export default function NewInvoicePage() {
           currency,
           tax,
           notes: notes || undefined,
-          status,
+          status: "DRAFT",
         }),
       });
 
@@ -119,6 +115,28 @@ export default function NewInvoicePage() {
       }
 
       const data = await res.json();
+      if (status === "SENT") {
+        // Save once, then use the real delivery endpoint. A failure keeps this
+        // same draft so retrying email never creates another invoice.
+        try {
+          const delivery = await fetch(
+            `/api/invoices/${data.invoice.id}/send`,
+            { method: "POST" },
+          );
+          if (!delivery.ok) {
+            const reason = await delivery.json().catch(() => null);
+            const notice =
+              reason?.code === "EMAIL_NOT_CONFIGURED"
+                ? "not-configured"
+                : "failed";
+            router.push(`/invoices/${data.invoice.id}?email=${notice}`);
+            return;
+          }
+        } catch {
+          router.push(`/invoices/${data.invoice.id}?email=failed`);
+          return;
+        }
+      }
       router.push(`/invoices/${data.invoice.id}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -162,7 +180,11 @@ export default function NewInvoicePage() {
           Invoice Details
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <ClientPicker value={clientId} onChange={setClientId} disabled={saving} />
+          <ClientPicker
+            value={clientId}
+            onChange={setClientId}
+            disabled={saving}
+          />
           <div className="space-y-1">
             <label
               htmlFor="invoiceDate"
@@ -285,7 +307,7 @@ export default function NewInvoicePage() {
                       updateItem(
                         item.id,
                         "quantity",
-                        parseInt(e.target.value) || 0
+                        parseInt(e.target.value) || 0,
                       )
                     }
                   />
@@ -307,7 +329,7 @@ export default function NewInvoicePage() {
                       updateItem(
                         item.id,
                         "unitPrice",
-                        parseFloat(e.target.value) || 0
+                        parseFloat(e.target.value) || 0,
                       )
                     }
                   />
@@ -324,7 +346,7 @@ export default function NewInvoicePage() {
                     updateItem(
                       item.id,
                       "unitPrice",
-                      parseFloat(e.target.value) || 0
+                      parseFloat(e.target.value) || 0,
                     )
                   }
                 />
@@ -407,10 +429,7 @@ export default function NewInvoicePage() {
           )}
           Save as Draft
         </Button>
-        <Button
-          onClick={() => handleSubmit("SENT")}
-          disabled={saving}
-        >
+        <Button onClick={() => handleSubmit("SENT")} disabled={saving}>
           {saving ? (
             <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
           ) : (

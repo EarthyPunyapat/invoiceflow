@@ -22,7 +22,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/invoiceflow_test?schema=public
       DATABASE_URL_UNPOOLED: postgresql://postgres:postgres@localhost:5432/invoiceflow_test?schema=public
-      NEXT_PUBLIC_APP_URL: https://ci.example.test
+      NEXT_PUBLIC_APP_URL: https://invoiceflow.example.test
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - uses: actions/checkout@v4
@@ -49,7 +49,7 @@ jobs:
           pnpm run build
       - name: Install browser
         run: pnpm exec playwright install --with-deps chromium
-      - name: Browser workflows and PDF downloads
+      - name: Browser email, payments and PDF workflows
         run: pnpm run test:browser
       - name: Typecheck
         run: pnpm run typecheck

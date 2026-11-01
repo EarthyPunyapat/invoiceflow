@@ -1,3 +1,4 @@
+import { stripeConfigured } from "@/lib/integration-config";
 import { NextRequest, NextResponse } from "next/server";
 import { createInvoiceCheckout } from "@/lib/billing";
 import { isValidShareToken } from "@/lib/token";
@@ -12,7 +13,7 @@ import { take } from "@/lib/rate-limit";
 
 export async function POST(
   req: NextRequest,
-  { params: paramsPromise }: { params: Promise<{ token: string }> }
+  { params: paramsPromise }: { params: Promise<{ token: string }> },
 ) {
   const params = await paramsPromise;
   const { token } = params;
@@ -33,22 +34,43 @@ export async function POST(
         status: 429,
         headers: {
           "Retry-After": String(
-            Math.max(1, Math.ceil((rl.resetAt - Date.now()) / 1000))
+            Math.max(1, Math.ceil((rl.resetAt - Date.now()) / 1000)),
           ),
         },
-      }
+      },
     );
   }
 
-  if (!process.env.STRIPE_SECRET_KEY) {
-    return NextResponse.json({ error: "Online payments are not configured" }, { status: 503 });
+  if (!stripeConfigured()) {
+    return NextResponse.json(
+      {
+        error:
+          "Online payment is not enabled for this invoice. Contact the issuer for payment instructions.",
+        code: "STRIPE_NOT_CONFIGURED",
+      },
+      { status: 503 },
+    );
   }
   try {
     const result = await createInvoiceCheckout(token);
-    if (result.error) return NextResponse.json({ error: result.error }, { status: result.status });
+    if (result.error)
+      return NextResponse.json(
+        {
+          error: result.error,
+          code: "code" in result ? result.code : undefined,
+        },
+        { status: result.status },
+      );
     return NextResponse.json({ url: result.url });
   } catch (error) {
     console.error("[pay]", error);
-    return NextResponse.json({ error: "Failed to start checkout" }, { status: 502 });
+    return NextResponse.json(
+      {
+        error:
+          "The payment service could not start checkout. Please try again or contact the issuer.",
+        code: "CHECKOUT_UNAVAILABLE",
+      },
+      { status: 502 },
+    );
   }
 }

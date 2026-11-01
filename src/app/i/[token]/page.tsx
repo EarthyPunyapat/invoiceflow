@@ -1,3 +1,4 @@
+import { stripeConfigured } from "@/lib/integration-config";
 import { Badge, statusVariant } from "@/components/ui/badge";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -61,18 +62,21 @@ export default async function InvoicePublicPage({
           state: true,
           postalCode: true,
           country: true,
+          stripeAccount: { select: { id: true } },
         },
       },
     },
   });
-  if (!invoice || invoice.status === "DRAFT" || invoice.status === "CANCELLED") notFound();
+  if (!invoice || invoice.status === "DRAFT" || invoice.status === "CANCELLED")
+    notFound();
 
   // Branding with safe fallbacks; accent color only applied when it's a
   // well-formed hex value so arbitrary strings never reach inline styles.
   const businessName =
     invoice.user.businessName || invoice.user.name || "InvoiceFlow";
   const accent =
-    invoice.user.accentColor && /^#[0-9a-fA-F]{3,8}$/.test(invoice.user.accentColor)
+    invoice.user.accentColor &&
+    /^#[0-9a-fA-F]{3,8}$/.test(invoice.user.accentColor)
       ? invoice.user.accentColor
       : undefined;
   const currency = invoice.currency || "USD";
@@ -115,10 +119,7 @@ export default async function InvoicePublicPage({
               </div>
             </div>
             <div className="sm:text-right">
-              <p
-                className="text-xs font-medium "
-                style={{ color: accent }}
-              >
+              <p className="text-xs font-medium " style={{ color: accent }}>
                 Invoice
               </p>
               <p className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -257,7 +258,14 @@ export default async function InvoicePublicPage({
         {/* Online payment CTA — only while the invoice is collectible */}
         {payable && (
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 sm:p-6">
-            <PayButton token={token} />
+            {stripeConfigured() && invoice.user.stripeAccount ? (
+              <PayButton token={token} />
+            ) : (
+              <p role="status" className="text-sm text-gray-600">
+                Online payment is not enabled for this invoice. Contact{" "}
+                {businessName} for payment instructions.
+              </p>
+            )}
           </div>
         )}
 
@@ -270,5 +278,9 @@ export default async function InvoicePublicPage({
 }
 
 function InvoiceStatusBadge({ status }: { status: string }) {
-  return <Badge variant={statusVariant(status)}>{status.charAt(0) + status.slice(1).toLowerCase()}</Badge>;
+  return (
+    <Badge variant={statusVariant(status)}>
+      {status.charAt(0) + status.slice(1).toLowerCase()}
+    </Badge>
+  );
 }

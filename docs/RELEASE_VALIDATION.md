@@ -111,3 +111,18 @@ Validation: 165 unit tests, 53 PostgreSQL integration tests, 14 production-serve
 Chromium checks, ESLint, TypeScript, frozen installation and production build
 passed. The two additional browser checks cover real PDF downloads and access
 controls. No schema migration or provider configuration change is needed.
+
+
+## Email and online payments correction — 2 November 2026
+
+Save & Send now uses the delivery endpoint after persisting one draft. Provider
+acceptance is recorded explicitly, failed sends are retryable without duplicate
+invoices, existing issued invoices can be emailed, and explicit resends have
+retry keys. Checkout now refreshes Stripe readiness; owner settings and public
+payment errors identify setup/account blockers.
+
+Validation: production build, ESLint, TypeScript, 165 unit tests, 66 database
+integration tests and 20 Chromium checks passed. The 36 billing tests also pass
+with one database connection. Browser provider HTTP is simulated at the SDK
+boundary; live delivery, real onboarding and payment completion remain separate
+production checks. See [DELIVERY_PAYMENTS.md](DELIVERY_PAYMENTS.md).

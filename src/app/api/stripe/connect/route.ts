@@ -1,3 +1,5 @@
+import { canAcceptPayments } from "@/lib/stripe-account";
+import { stripeConfigured } from "@/lib/integration-config";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getStripe } from "@/lib/stripe";
@@ -15,6 +17,14 @@ export async function GET(req: NextRequest) {
     }
 
     const userId = session.user.id;
+    if (!stripeConfigured())
+      return NextResponse.json(
+        {
+          error:
+            "Online payments are not configured for this deployment. Configure Stripe before connecting an account.",
+        },
+        { status: 503 },
+      );
 
     // Check if user already has a Stripe account
     let stripeAccount = await prisma.stripeAccount.findUnique({
@@ -22,25 +32,39 @@ export async function GET(req: NextRequest) {
     });
 
     if (stripeAccount?.stripeConnectOnboardingComplete) {
-      return NextResponse.json(
-        { error: "Stripe Connect already set up" },
-        { status: 400 }
+      const current = await getStripe().accounts.retrieve(
+        stripeAccount.stripeAccountId,
       );
+      if (canAcceptPayments(current))
+        return NextResponse.json(
+          {
+            error:
+              "Stripe Connect is already ready. Refresh your payment status.",
+          },
+          { status: 409 },
+        );
+      await prisma.stripeAccount.update({
+        where: { userId },
+        data: { stripeConnectOnboardingComplete: false },
+      });
     }
 
     // Create Stripe Connect account if not exists
     const stripe = getStripe();
     if (!stripeAccount) {
-      const account = await stripe.accounts.create({
-        type: "express",
-        country: process.env.STRIPE_CONNECT_COUNTRY || "US",
-        metadata: { invoiceFlowUserId: userId },
-        email: session.user.email ?? undefined,
-        capabilities: {
-          card_payments: { requested: true },
-          transfers: { requested: true },
+      const account = await stripe.accounts.create(
+        {
+          type: "express",
+          country: process.env.STRIPE_CONNECT_COUNTRY || "US",
+          metadata: { invoiceFlowUserId: userId },
+          email: session.user.email ?? undefined,
+          capabilities: {
+            card_payments: { requested: true },
+            transfers: { requested: true },
+          },
         },
-      }, { idempotencyKey: `connect-account:${userId}` });
+        { idempotencyKey: `connect-account:${userId}` },
+      );
 
       stripeAccount = await prisma.stripeAccount.upsert({
         where: { userId },
@@ -66,7 +90,7 @@ export async function GET(req: NextRequest) {
     console.error("[STRIPE_CONNECT]", error);
     return NextResponse.json(
       { error: "Failed to create Stripe Connect link" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

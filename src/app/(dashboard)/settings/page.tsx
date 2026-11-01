@@ -1,3 +1,6 @@
+import { getPaymentReadiness } from "@/lib/stripe-account";
+import { emailConfigured } from "@/lib/integration-config";
+import { RefreshIntegrations } from "./refresh-integrations";
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -14,10 +17,8 @@ export default async function SettingsPage() {
   if (!session?.user?.id) return null;
 
   // Check if user has connected Stripe + load their business profile
-  const [stripeAccount, profile] = await Promise.all([
-    prisma.stripeAccount.findUnique({
-      where: { userId: session.user.id },
-    }),
+  const [payment, profile] = await Promise.all([
+    getPaymentReadiness(session.user.id),
     prisma.user.findUnique({
       where: { id: session.user.id },
       select: {
@@ -35,8 +36,8 @@ export default async function SettingsPage() {
     }),
   ]);
 
-  const stripeConnected =
-    stripeAccount?.stripeConnectOnboardingComplete ?? false;
+  const stripeConnected = payment.state === "ready";
+  const emailReady = emailConfigured();
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -119,11 +120,14 @@ export default async function SettingsPage() {
               Stripe Connect
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              {stripeConnected
-                ? "Your Stripe account is connected. You can accept payments directly."
-                : "Connect your Stripe account to accept payments from clients."}
+              {payment.message}
             </p>
-            <div className="mt-4">
+            {payment.country && (
+              <p className="mt-2 text-xs text-gray-500">
+                Stripe account country: {payment.country}
+              </p>
+            )}
+            <div className="mt-4 flex flex-wrap items-center gap-3">
               {stripeConnected ? (
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
                   <div className="w-2 h-2 rounded-full bg-green-500" />
@@ -131,14 +135,53 @@ export default async function SettingsPage() {
                     Connected
                   </span>
                 </div>
+              ) : payment.state === "not_configured" ? (
+                <details className="text-sm">
+                  <summary className="font-medium underline">
+                    Deployment setup
+                  </summary>
+                  <p className="mt-2 text-gray-600">
+                    Configure STRIPE_SECRET_KEY in the Vercel production
+                    environment and redeploy. Then connect your account here.
+                  </p>
+                </details>
               ) : (
-                <StripeConnectButton />
+                <StripeConnectButton
+                  label={
+                    payment.state === "not_connected"
+                      ? "Connect Stripe Account"
+                      : "Continue Stripe setup"
+                  }
+                />
+              )}
+              {!["not_configured", "not_connected"].includes(payment.state) && (
+                <RefreshIntegrations />
               )}
             </div>
           </div>
         </div>
       </div>
 
+      <section
+        className="rounded-xl border border-gray-200 p-6"
+        aria-label="Invoice email settings"
+      >
+        <h2 className="text-sm font-semibold">Invoice email</h2>
+        <p className="mt-2 text-sm text-gray-600">
+          {emailReady
+            ? "Email sending is configured. Send an invoice to confirm that the provider accepts it; acceptance does not guarantee inbox delivery."
+            : "Email delivery is not configured for this deployment. A verified sending address is required before invoices can be emailed."}
+        </p>
+        <details className="mt-3 text-sm">
+          <summary className="font-medium underline">Deployment setup</summary>
+          <p className="mt-2 text-gray-600">
+            Configure RESEND_API_KEY and RESEND_FROM_EMAIL in the Vercel
+            production environment, use a sender on a verified Resend domain,
+            and redeploy. The Resend testing sender can only email its authorized
+            test recipient.
+          </p>
+        </details>
+      </section>
       <section className="rounded-xl bg-gray-50 p-6">
         <h2 className="text-sm font-semibold">Early access</h2>
         <p className="mt-2 text-sm leading-relaxed text-gray-600">

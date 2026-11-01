@@ -25,11 +25,6 @@ export function PayButton({ token }: PayButtonProps) {
     try {
       const res = await fetch(`/api/i/${token}/pay`, { method: "POST" });
 
-      if (res.status === 503) {
-        setNotice("Online payment unavailable");
-        return;
-      }
-
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.url) {
         setNotice(data?.error || "Unable to start payment");
@@ -39,7 +34,9 @@ export function PayButton({ token }: PayButtonProps) {
       // Hand off to Stripe Checkout.
       window.location.href = data.url;
     } catch {
-      setNotice("Online payment unavailable");
+      setNotice(
+        "The payment service could not be reached. Please try again, or contact the issuer for payment instructions.",
+      );
     } finally {
       setLoading(false);
     }
@@ -60,7 +57,9 @@ export function PayButton({ token }: PayButtonProps) {
         {loading ? "Redirecting…" : "Pay now"}
       </Button>
       {notice && (
-        <p className="text-sm text-red-600 dark:text-red-400">{notice}</p>
+        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+          {notice}
+        </p>
       )}
     </div>
   );

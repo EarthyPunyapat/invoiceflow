@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +17,7 @@ interface InvoiceActionsProps {
   status: string;
   canSend: boolean;
   canMarkPaid: boolean;
+  emailSentAt: string | null;
 }
 
 export function InvoiceActions({
@@ -24,11 +25,47 @@ export function InvoiceActions({
   status,
   canSend,
   canMarkPaid,
+  emailSentAt,
 }: InvoiceActionsProps) {
   const router = useRouter();
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const resendRequest = useRef<string | null>(null);
+  const emailEligible = ["DRAFT", "SENT", "OVERDUE"].includes(status);
+  const handleEmail = async () => {
+    setActionLoading("EMAIL");
+    setError("");
+    setNotice("");
+    try {
+      if (emailSentAt) resendRequest.current ||= crypto.randomUUID();
+      const response = await fetch(`/api/invoices/${invoiceId}/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          emailSentAt ? { requestId: resendRequest.current } : {},
+        ),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok)
+        throw new Error(
+          data?.error ||
+            "Email could not be sent. Your invoice is saved; please retry.",
+        );
+      resendRequest.current = null;
+      setNotice("Email submitted for delivery.");
+      router.refresh();
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Email could not be sent. Please retry.",
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   const handleStatusChange = async (newStatus: string) => {
     setActionLoading(newStatus);
@@ -55,7 +92,11 @@ export function InvoiceActions({
   };
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this invoice? This cannot be undone.")) {
+    if (
+      !confirm(
+        "Are you sure you want to delete this invoice? This cannot be undone.",
+      )
+    ) {
       return;
     }
 
@@ -120,33 +161,55 @@ export function InvoiceActions({
   };
 
   return (
-    <>
+    <div className="min-w-0 space-y-3">
       {error && (
-        <div className="w-full p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-600 dark:text-red-400">
+        <div
+          role="alert"
+          className="w-full p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-600 dark:text-red-400"
+        >
           {error}
         </div>
       )}
+      {notice && (
+        <p role="status" className="w-full text-sm text-primary-700">
+          {notice}
+        </p>
+      )}
       <div className="flex flex-wrap items-center gap-2">
+        {emailEligible && (
+          <Button
+            size="sm"
+            onClick={handleEmail}
+            disabled={actionLoading !== null}
+          >
+            {actionLoading === "EMAIL" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+            {emailSentAt ? "Send again" : "Send invoice"}
+          </Button>
+        )}
         {canSend && (
           <Button
             variant="outline"
             size="sm"
             onClick={() => handleStatusChange("SENT")}
-            disabled={actionLoading === "SENT"}
+            disabled={actionLoading !== null}
           >
             {actionLoading === "SENT" ? (
               <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
             ) : (
               <Send className="w-4 h-4 mr-1.5" />
             )}
-            Mark as Sent
+            Mark sent manually
           </Button>
         )}
         {canMarkPaid && (
           <Button
             size="sm"
             onClick={() => handleStatusChange("PAID")}
-            disabled={actionLoading === "PAID"}
+            disabled={actionLoading !== null}
           >
             {actionLoading === "PAID" ? (
               <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
@@ -165,7 +228,7 @@ export function InvoiceActions({
             variant="outline"
             size="sm"
             onClick={handleCopyLink}
-            disabled={actionLoading === "SHARE"}
+            disabled={actionLoading !== null}
           >
             {actionLoading === "SHARE" ? (
               <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
@@ -182,7 +245,7 @@ export function InvoiceActions({
             variant="danger"
             size="sm"
             onClick={handleDelete}
-            disabled={actionLoading === "DELETE"}
+            disabled={actionLoading !== null}
           >
             {actionLoading === "DELETE" ? (
               <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
@@ -193,6 +256,6 @@ export function InvoiceActions({
           </Button>
         )}
       </div>
-    </>
+    </div>
   );
 }

@@ -44,7 +44,7 @@ InvoiceFlow is an invoicing app for freelancers. Manage clients, create branded 
 | Area | Behavior |
 |---|---|
 | Clients and invoices | Owner-scoped management, line items, percentage tax, draft editing and controlled status changes |
-| Invoice delivery | Resend email containing a stable public `/i/[token]` link |
+| Invoice delivery | Save & Send calls the email endpoint; accepted email uses a stable public link, failed delivery keeps one saved draft, explicit resends are available |
 | Public invoices | Branded view, readable multi-page PDF export with saved notes and correct tax breakdown, unguessable share tokens and `noindex` metadata |
 | Online payments | Tax-inclusive grand total, reuse of open Checkout sessions, signed webhook reconciliation |
 | Reminders | Escalating email reminders for sent and overdue invoices |
@@ -137,12 +137,14 @@ Keep secrets in ignored local environment files or the hosting provider's secure
 ```bash
 pnpm test
 pnpm run lint
-pnpm run build
+NEXT_PUBLIC_APP_URL=https://invoiceflow.example.test pnpm run build
 pnpm run typecheck
 # After building, against the disposable local test DB:
 pnpm run test:browser
 pnpm audit --prod --audit-level high
 ```
+
+For these local browser checks, the build uses the HTTPS test origin above; Vercel releases use the real configured production origin. Next.js embeds NEXT_PUBLIC_APP_URL during the build.
 
 The build generates Prisma Client, compiles all routes, and produces the production application. Production Vercel builds first verify and migrate the database with a guarded release step; local and preview builds require explicit database preparation. Google Fonts access is needed for the configured `next/font` loader. Prisma downloads must retain TLS and checksum verification.
 
@@ -250,4 +252,10 @@ invoices, invoice/estimate details, keyboard interactions, reduced motion and
 mobile sign-out. PDF browser tests also exercise the Download PDF button, parse
 the exported values and notes, and reject cross-account or unauthenticated
 downloads. They do not complete Google OAuth
-or send real emails/payments.
+or send real emails/payments. Provider HTTP responses come from guarded local
+fixtures loaded only into the test server. These fixtures exercise the actual
+Resend/Stripe SDK requests while blocking unmatched external requests. Browser
+checks cover Save & Send, provider rejection and retry, explicit resend, existing
+issued invoices, Stripe readiness reconciliation and the Checkout redirect.
+See [delivery and payment checks](docs/DELIVERY_PAYMENTS.md) for production setup
+and the distinction between email acceptance and inbox delivery.
