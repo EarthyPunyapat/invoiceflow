@@ -99,3 +99,15 @@ explicit design-meter tradeoffs. These results are local; Vercel build status,
 real OAuth, live provider delivery and production payment behavior are not
 established by this review. Releases continue through GitHub main and the linked
 Vercel integration, without deploying from the cloud sandbox.
+
+
+## PDF correction — 2 November 2026
+
+Invoice exports now follow a measured A4 layout with separate metadata, correct
+monetary tax, saved payment notes and safe multi-page flow. See [PDF_REVIEW.md](PDF_REVIEW.md)
+for the reproduced overlap, rendered example and regression coverage.
+
+Validation: 165 unit tests, 53 PostgreSQL integration tests, 14 production-server
+Chromium checks, ESLint, TypeScript, frozen installation and production build
+passed. The two additional browser checks cover real PDF downloads and access
+controls. No schema migration or provider configuration change is needed.

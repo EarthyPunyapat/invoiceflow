@@ -49,7 +49,7 @@ jobs:
           pnpm run build
       - name: Install browser
         run: pnpm exec playwright install --with-deps chromium
-      - name: Browser client and invoice workflows
+      - name: Browser workflows and PDF downloads
         run: pnpm run test:browser
       - name: Typecheck
         run: pnpm run typecheck

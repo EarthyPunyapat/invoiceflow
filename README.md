@@ -45,7 +45,7 @@ InvoiceFlow is an invoicing app for freelancers. Manage clients, create branded 
 |---|---|
 | Clients and invoices | Owner-scoped management, line items, percentage tax, draft editing and controlled status changes |
 | Invoice delivery | Resend email containing a stable public `/i/[token]` link |
-| Public invoices | Branded view, PDF export from the authenticated app, unguessable share tokens and `noindex` metadata |
+| Public invoices | Branded view, readable multi-page PDF export with saved notes and correct tax breakdown, unguessable share tokens and `noindex` metadata |
 | Online payments | Tax-inclusive grand total, reuse of open Checkout sessions, signed webhook reconciliation |
 | Reminders | Escalating email reminders for sent and overdue invoices |
 | Recurring invoices | Scheduled draft generation and schedule advancement in one database transaction |
@@ -91,6 +91,23 @@ pnpm run db:seed
 ```
 
 The seed replaces the account selected by `SEED_DEMO_EMAIL` (default `demo@invoiceflow.dev`) and its related data. Do not target a real customer account or production database.
+
+### PDF exports
+
+PDF downloads use a measured A4 layout with separate sender/recipient blocks,
+issue/due dates, currency, status, itemized charges, tax and total. Long records
+paginate with repeated table headings. Saved invoice Notes are included under
+“Notes & payment instructions”; payment details and a billing period can be
+entered there. The PDF reflects the saved invoice amounts and does not change
+payment status or data.
+
+[View the synthetic PDF example](docs/examples/invoice-preview.pdf) and
+[layout review](docs/PDF_REVIEW.md). Generate short, normal and long review
+fixtures without database/provider access:
+
+```bash
+pnpm exec tsx scripts/preview-invoice-pdf.ts
+```
 
 ## Configuration
 
@@ -230,5 +247,7 @@ port 3100, use isolated test accounts and a locally signed session, and exercise
 actual pages, API requests and database writes. The design checks cover 13 routes
 at desktop (1440px), tablet (768px) and phone (390px) widths, including public
 invoices, invoice/estimate details, keyboard interactions, reduced motion and
-mobile sign-out. They do not complete Google OAuth
+mobile sign-out. PDF browser tests also exercise the Download PDF button, parse
+the exported values and notes, and reject cross-account or unauthenticated
+downloads. They do not complete Google OAuth
 or send real emails/payments.

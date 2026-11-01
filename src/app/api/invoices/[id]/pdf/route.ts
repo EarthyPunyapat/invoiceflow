@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 // GET /api/invoices/[id]/pdf — render the invoice as a PDF document.
 export async function GET(
   _req: NextRequest,
-  { params: paramsPromise }: { params: Promise<{ id: string }> }
+  { params: paramsPromise }: { params: Promise<{ id: string }> },
 ) {
   const params = await paramsPromise;
   try {
@@ -42,10 +42,7 @@ export async function GET(
     });
 
     if (!invoice) {
-      return NextResponse.json(
-        { error: "Invoice not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
     }
 
     // Compose the saved business profile into a printable address block so
@@ -61,6 +58,7 @@ export async function GET(
     const buffer = await buildInvoicePdf({
       invoiceNumber: invoice.invoiceNumber,
       status: invoice.status,
+      issueDate: invoice.createdAt,
       dueDate: invoice.dueDate,
       currency: invoice.currency,
       client: {
@@ -83,6 +81,7 @@ export async function GET(
       subtotal: invoice.subtotal,
       tax: invoice.tax,
       total: invoice.total,
+      notes: invoice.notes,
     });
 
     return new Response(buffer as unknown as BodyInit, {
@@ -95,7 +94,7 @@ export async function GET(
     console.error("[INVOICE_PDF]", error);
     return NextResponse.json(
       { error: "Failed to generate PDF" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
