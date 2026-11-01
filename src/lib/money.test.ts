@@ -104,3 +104,12 @@ describe("applyTaxPercent", () => {
     expect(r.totalCents).toBe(4321);
   });
 });
+
+
+describe("safe integer limits", () => {
+  it("rejects money outside the exact cent range", () => {
+    expect(() => dollarsToCents(100_000_000_000_000)).toThrow(RangeError);
+    expect(() => sumCents(Number.MAX_SAFE_INTEGER, 1)).toThrow(RangeError);
+    expect(() => applyTaxPercent(Number.MAX_SAFE_INTEGER, 100)).toThrow(RangeError);
+  });
+});

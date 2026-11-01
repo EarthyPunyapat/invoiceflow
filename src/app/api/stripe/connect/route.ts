@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+import { appUrl } from "@/lib/app-url";
 
 export async function GET(req: NextRequest) {
   try {
@@ -33,16 +33,19 @@ export async function GET(req: NextRequest) {
     if (!stripeAccount) {
       const account = await stripe.accounts.create({
         type: "express",
-        country: "US",
+        country: process.env.STRIPE_CONNECT_COUNTRY || "US",
+        metadata: { invoiceFlowUserId: userId },
         email: session.user.email ?? undefined,
         capabilities: {
           card_payments: { requested: true },
           transfers: { requested: true },
         },
-      });
+      }, { idempotencyKey: `connect-account:${userId}` });
 
-      stripeAccount = await prisma.stripeAccount.create({
-        data: {
+      stripeAccount = await prisma.stripeAccount.upsert({
+        where: { userId },
+        update: {},
+        create: {
           userId,
           stripeAccountId: account.id,
           stripeConnectOnboardingComplete: false,
@@ -53,8 +56,8 @@ export async function GET(req: NextRequest) {
     // Create account link for onboarding
     const accountLink = await stripe.accountLinks.create({
       account: stripeAccount.stripeAccountId,
-      refresh_url: `${appUrl}/api/stripe/connect/callback?refresh=true`,
-      return_url: `${appUrl}/api/stripe/connect/callback?success=true`,
+      refresh_url: `${appUrl()}/api/stripe/connect/callback?refresh=true`,
+      return_url: `${appUrl()}/api/stripe/connect/callback?success=true`,
       type: "account_onboarding",
     });
 

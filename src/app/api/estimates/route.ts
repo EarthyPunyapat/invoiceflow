@@ -96,19 +96,17 @@ export async function POST(req: NextRequest) {
     const subtotal = centsToDollars(subtotalCents);
     const total = centsToDollars(totalCents);
 
-    // Estimate numbering (EST-YYYYMM-XXXX) — same sequence helper as invoices.
-    const prefix = monthPrefix(new Date(issueDate)).replace("INV", "EST");
-    const lastEstimate = await prisma.estimate.findFirst({
-      where: { estimateNumber: { startsWith: prefix } },
-      orderBy: { estimateNumber: "desc" },
-    });
-    const estimateNumber = `${prefix}-${String(
-      nextSequence(lastEstimate?.estimateNumber ?? null)
-    ).padStart(4, "0")}`;
-
-    const estimate = await prisma.estimate.create({
+    const userId = session.user.id;
+    const estimate = await prisma.$transaction(async tx => {
+      const prefix = monthPrefix(new Date(issueDate)).replace("INV", "EST");
+      // Estimate numbers are globally unique in the existing schema.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`estimate-number:${prefix}`}))`;
+      const records = await tx.estimate.findMany({ where: { estimateNumber: { startsWith: `${prefix}-` } }, select: { estimateNumber: true } });
+      const last = records.reduce<string | null>((best, row) => nextSequence(row.estimateNumber) > nextSequence(best) ? row.estimateNumber : best, null);
+      const estimateNumber = `${prefix}-${String(nextSequence(last)).padStart(4, "0")}`;
+    const created = await tx.estimate.create({
       data: {
-        userId: session.user.id,
+        userId,
         clientId,
         estimateNumber,
         status,
@@ -134,11 +132,15 @@ export async function POST(req: NextRequest) {
       },
     });
 
+      return created;
+    });
+
     return NextResponse.json({ estimate }, { status: 201 });
   } catch (error: any) {
+    if (error instanceof RangeError) return NextResponse.json({ error: "Invoice amounts exceed supported limits" }, { status: 400 });
     console.error("Create estimate error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to create estimate" },
+      { error: "Failed to create estimate" },
       { status: 500 }
     );
   }

@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     // Find SENT invoices past their due date
     const overdueInvoices = await prisma.invoice.findMany({
       where: {
-        status: "SENT",
+        status: { in: ["SENT", "OVERDUE"] },
         dueDate: { lt: now },
       },
       include: {
@@ -70,10 +70,13 @@ export async function GET(req: NextRequest) {
       }
 
       try {
-        const { emailId } = await sendPaymentReminder(
+        const delivery = await sendPaymentReminder(
           invoice.id,
           reminderType,
+          invoice.reminderCount,
         );
+        if (delivery.skipped) continue;
+        const { emailId } = delivery;
 
         results.push({
           invoiceId: invoice.id,

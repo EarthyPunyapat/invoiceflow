@@ -1,11 +1,9 @@
+import { ConflictError } from "@/lib/api-error";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import {
-  monthPrefix,
-  sanitizeInvoicePrefix,
-  nextInvoiceNumber,
-} from "@/lib/invoice-number";
+import { lockOwner } from "@/lib/billing";
+import { allocateInvoiceNumber } from "@/lib/invoice-sequence";
 
 /**
  * POST /api/estimates/[id]/convert
@@ -20,8 +18,9 @@ import {
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -51,30 +50,16 @@ export async function POST(
       );
     }
 
+    const ownerId = session.user.id;
     const invoice = await prisma.$transaction(async (tx) => {
-      // Same numbering as POST /api/invoices: honors the owner's
-      // settings.invoicePrefix ("PFX-0001"), falls back to the default
-      // INV-YYYYMM-XXXX scheme. Lookup is owner-scoped and scheme-scoped
-      // (see invoice-number.ts for the scoping decision + caveat).
+      await lockOwner(tx, estimate.userId);
+      const claimed = await tx.estimate.updateMany({
+        where: { id: estimate.id, userId: ownerId, status: { in: ["DRAFT", "SENT", "ACCEPTED"] } },
+        data: { status: "CONVERTED" },
+      });
+      if (!claimed.count) throw new ConflictError("Estimate has already been converted or declined");
       const now = new Date();
-      const owner = await tx.user.findUnique({
-        where: { id: estimate.userId },
-        select: { invoicePrefix: true },
-      });
-      const scheme = sanitizeInvoicePrefix(owner?.invoicePrefix);
-      const schemePattern = scheme ? `${scheme}-` : monthPrefix(now);
-      const lastInvoice = await tx.invoice.findFirst({
-        where: {
-          userId: estimate.userId,
-          invoiceNumber: { startsWith: schemePattern },
-        },
-        orderBy: { invoiceNumber: "desc" },
-      });
-      const invoiceNumber = nextInvoiceNumber({
-        prefix: scheme,
-        date: now,
-        lastNumber: lastInvoice?.invoiceNumber ?? null,
-      });
+      const invoiceNumber = await allocateInvoiceNumber(tx, estimate.userId, now);
 
       // Due date: 30 days from now (standard terms on conversion).
       const dueDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
@@ -120,8 +105,8 @@ export async function POST(
   } catch (error: any) {
     console.error("Convert estimate error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to convert estimate" },
-      { status: 500 }
+      { error: error instanceof ConflictError ? error.message : "Failed to convert estimate" },
+      { status: error instanceof ConflictError ? 409 : 500 }
     );
   }
 }

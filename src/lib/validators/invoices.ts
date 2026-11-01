@@ -15,7 +15,7 @@ export const invoiceCreateSchema = z
     clientId: z.string().min(1),
     items: z.array(lineItemSchema).min(1).max(500),
     dueDate: isoDateSchema,
-    status: invoiceStatusSchema.default("DRAFT"),
+    status: z.enum(["DRAFT", "SENT"]).default("DRAFT"),
     currency: currencySchema,
     tax: z.number().min(0).max(1_000_000).default(0),
     notes: notesSchema,

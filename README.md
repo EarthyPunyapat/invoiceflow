@@ -1,178 +1,147 @@
 # InvoiceFlow
 
-**Automated Stripe invoicing for freelancers.** Create branded invoices, send them with a public payment link, chase overdue payments automatically, run recurring billing, convert estimates to invoices — and watch it all on a reports dashboard.
+InvoiceFlow is an invoicing app for freelancers. Manage clients, create branded invoices and estimates, share public payment links, collect payments through Stripe Connect, and automate overdue reminders.
 
-## Tech Stack
+## Stack
 
-- **Framework:** Next.js 14 (App Router) · TypeScript
-- **Styling:** Tailwind CSS (dark mode supported) · Framer Motion
-- **Auth:** NextAuth v5 (Google OAuth)
-- **Database:** PostgreSQL 16 via Prisma · Docker Compose for local dev
-- **Payments:** Stripe Connect (OAuth + webhooks) & Stripe Checkout
-- **Email:** Resend + React Email templates
-- **Background Jobs:** Cron-triggered API routes (`CRON_SECRET` bearer auth)
-- **Testing:** Vitest · ESLint (next/core-web-vitals) · GitHub Actions CI
+- Node.js 22 and pnpm 10.34.9 (`packageManager` in `package.json`)
+- Next.js 15 App Router, React 18, TypeScript, Tailwind CSS and Framer Motion
+- NextAuth v5 with Google OAuth and JWT sessions
+- Prisma 5 and PostgreSQL 16; Docker Compose locally, Neon for deployment
+- Stripe Connect Express and Checkout; Resend and React Email
+- Vitest unit and PostgreSQL integration tests; ESLint and GitHub Actions
 
-## Features
+## Implemented workflows
 
-| Area | What you get |
+| Area | Behavior |
 |---|---|
-| Invoices | CRUD, line items, tax, per-invoice currency, send-by-email, status lifecycle (DRAFT → SENT → PAID/OVERDUE/CANCELLED) |
-| Public share page | Unguessable token URL `/i/[token]`, branded card (logo, accent color, business address), `noindex`, pay CTA |
-| Online payment | Stripe Checkout session per invoice; graceful "not configured" state when keys are absent |
-| Automated reminders | `POST /api/cron/chase-invoices`: escalating reminder cadence for SENT/OVERDUE invoices |
-| Recurring invoices | Weekly/biweekly/monthly/yearly templates with month-end clamping; `GET /api/cron/generate-recurring` materializes drafts |
-| Estimates | Full CRUD, status flow (DRAFT/SENT/ACCEPTED/DECLINED), one-click **convert to invoice** |
-| Money safety | All arithmetic in integer cents (`src/lib/money.ts`) with HALF-UP rounding — no float drift |
-| Reports | Revenue by month (SVG chart), top clients, average days-to-pay, A/R aging buckets (current/30/60/90+) |
-| Branding | Business profile (name, logo, accent color, address) applied to shared invoices |
-| Safety | Rate-limited public pay endpoint, Zod-validated request schemas (`src/lib/validators`), ownership checks on every query |
+| Clients and invoices | Owner-scoped management, line items, percentage tax, draft editing and controlled status changes |
+| Invoice delivery | Resend email containing a stable public `/i/[token]` link |
+| Public invoices | Branded view, PDF export from the authenticated app, unguessable share tokens and `noindex` metadata |
+| Online payments | Tax-inclusive grand total, reuse of open Checkout sessions, signed webhook reconciliation |
+| Reminders | Escalating email reminders for sent and overdue invoices |
+| Recurring invoices | Scheduled draft generation and schedule advancement in one database transaction |
+| Estimates | Create and manage estimates; convert an estimate to an invoice once |
+| Reports and exports | Revenue, outstanding balances, aging, client reports and CSV export |
+| Business profile | Name, address, logo, accent color and invoice numbering prefix |
 
-## Getting Started
+The app offers early access. Subscription purchases and plan enforcement are not implemented. Invoice payments are separate from billing users for access to InvoiceFlow.
 
-```bash
-npm install
-# Copy .env.example → .env and fill in your keys
-cp .env.example .env
-# Start the local PostgreSQL 16 database via Docker Compose
-docker compose up -d
-npx prisma generate
-npx prisma db push
-# Optional: load demo data (clients/invoices across every status)
-npm run db:seed
-npm run dev
-```
+## Local development
 
-Opens at `http://localhost:3000`.
-
-> Docker Compose provides the local Postgres database; its data persists in the named `invoiceflow-pgdata` volume; stop it with `docker compose down`.
->
-> Seeded demo data lives under one user account. After signing in with Google, re-run the seed with your own email to see the dashboard populated:
-> `SEED_DEMO_EMAIL="you@gmail.com" npm run db:seed`
-
-## Environment Variables
-
-| Variable | Required | Purpose |
-|---|---|---|
-| `DATABASE_URL` | ✅ | PostgreSQL connection string |
-| `AUTH_SECRET` | ✅ | NextAuth encryption secret |
-| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | ✅ | Google OAuth credentials |
-| `NEXTAUTH_URL` | ✅ | Canonical app URL for auth callbacks |
-| `STRIPE_SECRET_KEY` | For payments | Enables Stripe Connect + Checkout (pay endpoint returns 503 without it) |
-| `STRIPE_WEBHOOK_SECRET` | For webhooks | Verifies `POST /api/webhooks/stripe` signatures |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | For payments | Client-side Stripe |
-| `RESEND_API_KEY` | For email | Invoice delivery + reminders (send fails gracefully when unset) |
-| `RESEND_FROM_EMAIL` | For email | From address on outgoing invoice/reminder emails |
-| `FREELANCER_NOTIFY_EMAIL` | Recommended | Your inbox for payment/activity notifications |
-| `INNGEST_EVENT_KEY` / `INNGEST_SIGNING_KEY` | Optional | Reserved for future background-job integration — not read by current code |
-| `NEXT_PUBLIC_APP_URL` | Recommended | Absolute URLs in emails / share links |
-| `CRON_SECRET` | For cron | Bearer token required by both `/api/cron/*` routes |
-| `SEED_DEMO_EMAIL` | Optional | Target account for demo seed data |
-
-The app boots without Stripe/Resend keys — those features degrade gracefully instead of crashing.
-
-## Architecture
-
-```
-Browser ──► middleware.ts (session gate)
-   │
-   ├─► /            Landing page (marketing)
-   ├─► /(dashboard) Server components: dashboard, invoices, clients,
-   │                estimates, reports, settings — auth() + prisma direct
-   ├─► /i/[token]   PUBLIC branded invoice view + Stripe Checkout CTA
-   │
-   └─► /api/* ────► Prisma Client ────► PostgreSQL
-         ├── auth/[...nextauth]     Google OAuth
-         ├── clients[/id]           CRUD
-         ├── invoices[/id][/send]   CRUD, status transitions, email+share token
-         ├── estimates[/id][/convert] CRUD + atomic estimate→invoice handoff
-         ├── i/[token]/pay          Rate-limited Checkout session minting
-         ├── cron/chase-invoices    Reminder escalation (bearer CRON_SECRET)
-         ├── cron/generate-recurring Materializes due recurring drafts
-         └── webhooks/stripe        Signature-verified payment events
-
-Side services: Stripe (Checkout + Connect + webhooks) · Resend (invoice,
-reminder & receipt emails via React Email templates) · external cron hitting
-/api/cron/* with `Authorization: Bearer $CRON_SECRET`.
-```
-
-**Conventions**
-
-- Every mutating route: `auth()` guard → ownership via `findFirst({ id, userId })` → validate → cents-math → Prisma write.
-- Money never floats through math: inputs go through `dollarsToCents()` (string-slicing + HALF-UP), sums/tax happen on integers (`sumCents`, `applyTaxPercent`), storage converts back once via `centsToDollars()`.
-- Pure logic (money, aging, reminders cadence, invoice numbering, recurring date math, rate limiter) lives in `src/lib/*.ts` as unit-tested functions; API routes stay thin.
-- Public endpoints defense: 128-bit hex share tokens, regex shape validation, fixed-window rate limit (`src/lib/rate-limit.ts`).
-
-## Testing
+Install Node.js 22 and the pinned pnpm version first. Keep existing local configuration rather than replacing it.
 
 ```bash
-npm test         # vitest, single pass (118 tests across 12 files)
-npm run test:watch
-npm run lint     # eslint next/core-web-vitals
-npx tsc --noEmit # full typecheck incl. prisma/seed.ts
-npm run build    # production build
+pnpm install --frozen-lockfile
+test -e .env || cp .env.example .env
+# Configure .env before continuing.
+docker compose up -d --wait
+pnpm run db:generate
+pnpm run db:deploy
+pnpm run dev
 ```
 
-Unit tests cover the pure libraries: money rounding/conversion, tax breakdowns, invoice number sequencing, reminder scheduling, aging buckets, recurring date clamping (leap years, month ends), token generation/validation, and the rate limiter.
+Use the local PostgreSQL URL from `.env.example` for both `DATABASE_URL` and `DATABASE_URL_UNPOOLED`. Generate an `AUTH_SECRET`, add Google OAuth credentials, and use `http://localhost:3000` for `NEXTAUTH_URL` and `NEXT_PUBLIC_APP_URL`. Register `http://localhost:3000/api/auth/callback/google` in the Google OAuth client.
 
-CI (`.github/workflows/ci.yml`) runs on pushes/PRs to `main` (Node 20): `npm ci → prisma generate → tsc --noEmit → lint → test`. It intentionally skips `next build` and provisions no database service — compile safety is covered by typecheck, and nothing in CI connects to Postgres.
+Leave optional Stripe and Resend keys empty until you have valid credentials; the example strings are placeholders. Unconfigured integrations return an unavailable response. Google sign-in and the full send/pay workflow require their actual service configuration.
 
-## Recurring Invoices API
+`pnpm run db:deploy` applies committed migrations to a new development database. If an existing database was created using `prisma db push`, follow the [baseline procedure](docs/DEPLOYMENT.md#existing-database-without-migration-history) before applying migrations. Never use `db push` or `migrate reset` to deploy production schema changes.
 
-A `RecurringInvoice` template clones itself into fresh DRAFT invoices each time
-its schedule comes due. Schedules are `WEEKLY`, `BIWEEKLY`, `MONTHLY` or
-`YEARLY`; all math is UTC and month-end dates clamp safely (Jan 31 → Feb 28 on
-non-leap years, Feb 29 → Feb 28 after a leap year). Each generated invoice gets
-the next `INV-YYYYMM-NNNN` number and line items/tax recomputed through the
-integer-cents pipeline — never copied as floats.
+The Compose database uses a persistent named volume. `docker compose down` stops it without deleting that volume.
 
-Trigger it from any external scheduler:
+Optional demo data:
 
 ```bash
-curl -X GET "$NEXT_PUBLIC_APP_URL/api/cron/generate-recurring" \
-  -H "Authorization: Bearer $CRON_SECRET"
+# Only against a disposable development database.
+pnpm run db:seed
 ```
 
-- Missing `CRON_SECRET` on the server → `503 {"error": "CRON_SECRET not configured"}`
-- Wrong/absent bearer token → `401`
-- Success → `{ ok, processed, generated, skipped, details, durationMs }`
+The seed replaces the account selected by `SEED_DEMO_EMAIL` (default `demo@invoiceflow.dev`) and its related data. Do not target a real customer account or production database.
 
-The sibling `POST /api/cron/chase-invoices` uses the same bearer guard for its
-escalating friendly → firm → final reminder cadence.
+## Configuration
 
-## Project Structure
+| Variable | Use |
+|---|---|
+| `DATABASE_URL` | Prisma runtime PostgreSQL connection; use Neon's pooled URL in deployment |
+| `DATABASE_URL_UNPOOLED` | Direct database connection for Prisma migrations |
+| `AUTH_SECRET` | Stable, private NextAuth signing/encryption secret |
+| `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google web OAuth client credentials |
+| `NEXTAUTH_URL` | Canonical auth origin; HTTPS in production |
+| `AUTH_TRUST_HOST` | Set to `true` only behind the trusted deployment proxy, such as Vercel |
+| `NEXT_PUBLIC_APP_URL` | Canonical public HTTPS origin for invoice, payment and email URLs |
+| `STRIPE_SECRET_KEY` | Stripe platform API key for Connect and Checkout |
+| `STRIPE_WEBHOOK_SECRET` | Signing secret for this deployment's connected-account webhook endpoint |
+| `STRIPE_CONNECT_COUNTRY` | Supported Connect country for newly created accounts; defaults to `US` |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | Email API key and a sender on a verified Resend domain |
+| `FREELANCER_NOTIFY_EMAIL` | Fallback only when the invoice owner has no email address |
+| `CRON_SECRET` | Bearer secret for scheduled invoice generation and reminders |
+| `SEED_DEMO_EMAIL` | Disposable account targeted by the destructive demo seed |
 
+`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is reserved in the example configuration; the current hosted Checkout redirect does not use a browser Stripe SDK. The `INNGEST_*` variables are also unused.
+
+Keep secrets in ignored local environment files or the hosting provider's secure settings. Preview and production deployments should use separate databases and service keys.
+
+## Validation
+
+```bash
+pnpm test
+pnpm run lint
+pnpm run build
+pnpm run typecheck
+pnpm audit --prod --audit-level high
 ```
-prisma/
-├── schema.prisma        # User/Client/Invoice(+Item)/Estimate(+Item)/RecurringInvoice/StripeAccount
-└── seed.ts              # Demo data (npm run db:seed)
-src/
-├── app/
-│   ├── page.tsx             # Landing page (hero, features, pricing, FAQ, CTA)
-│   ├── i/[token]/           # Public branded invoice view (+ pay button)
-│   ├── (dashboard)/         # Authenticated app: dashboard, invoices, clients,
-│   │                        # estimates, reports, settings
-│   └── api/                 # See architecture map above
-├── components/
-│   ├── ui/                  # Button, input, select, badge primitives
-│   ├── aging-report.tsx     # A/R aging widget (dashboard + reports)
-│   ├── video-lightbox.tsx, interactive-cost-calculator.tsx, …  # Marketing widgets
-│   └── reports/             # SVG bar chart (revenue by month)
-├── lib/
-│   ├── money.ts, invoice-number.ts, reminders.ts, aging.ts,
-│   │                        # Pure logic — unit-tested, no I/O
-│   ├── recurring.ts, rate-limit.ts, token.ts, invoice-filters.ts, reports.ts
-│   ├── validators/          # Zod schemas for every mutating API route
-│   └── stripe.ts, resend.ts, prisma.ts, auth.ts, brand.ts  # Integrations
-├── emails/                  # React Email templates
-└── middleware.ts            # Auth middleware (protects dashboard routes)
+
+The build generates Prisma Client, compiles all routes, and produces the production application. Google Fonts access is needed for the configured `next/font` loader. Prisma downloads must retain TLS and checksum verification.
+
+Integration tests use a separate disposable **local** database named `invoiceflow_test`. Create it once:
+
+```bash
+docker compose exec -T db createdb -U postgres invoiceflow_test
 ```
 
-## Key Conversion Features
+Then run:
 
-- **Loss aversion:** Interactive cost calculator showing real dollar loss from manual invoicing
-- **Social proof:** Live rotating counter ("X freelancers joined this week")
-- **Decoy pricing:** Three-tier pricing with asymmetric dominance
-- **Exit intent:** Desktop exit-intent popup (once per session)
-- **Reciprocity:** Free downloadable guide (no email required)
-- **Urgency:** "Early adopter pricing — lock in $19/mo forever"
+```bash
+export DATABASE_URL='postgresql://postgres:postgres@localhost:5432/invoiceflow_test?schema=public'
+export DATABASE_URL_UNPOOLED="$DATABASE_URL"
+pnpm run db:deploy
+pnpm run test:integration
+```
+
+Run these exports in a separate shell from the development server. The suite rejects remote databases and other database names. It uses real PostgreSQL transactions and signed Stripe fixtures, with external Stripe/Resend requests mocked. It covers invoice totals, public links, checkout reuse, webhook verification and retries, concurrent numbering/conversion, and recurring transaction rollback. It does not establish that live OAuth, payment or email credentials work.
+
+GitHub Actions runs frozen installation, Prisma generation, migrations, lint, unit and integration tests, production build, typechecking and a production dependency audit using PostgreSQL 16 and Node.js 22.
+
+## Deployment
+
+Use [the Vercel and Neon release guide](docs/DEPLOYMENT.md) for migration handling, service configuration, scheduled jobs and the required test-mode release smoke test. Passing local checks is separate from validating a deployed application.
+
+## Scheduled jobs
+
+Both jobs use `GET` and require `Authorization: Bearer <CRON_SECRET>`:
+
+- `/api/cron/generate-recurring` creates due draft invoices and advances their schedules.
+- `/api/cron/chase-invoices` sends due reminders.
+
+`vercel.json` schedules generation at 00:00 UTC and reminders at 09:00 UTC each day. Vercel sends the bearer header when `CRON_SECRET` is configured. Check the plan's scheduling and function-duration limits before enabling a larger workload.
+
+## Current product boundaries
+
+- Online Checkout supports currencies with two decimal places and positive totals within its validated amount limit. It charges one tax-inclusive invoice total; the public invoice supplies the breakdown.
+- Dashboard and reports show monetary totals for the selected currency. They do not convert currencies or provide a consolidated foreign-exchange total. Recent invoices display their own currency.
+- Public payment IP throttling is in memory and therefore best effort across Vercel instances. A distributed rate limiter is needed for a larger deployment.
+- Payment confirmation email currently goes to the invoice owner, not a separate customer receipt workflow.
+- Recurring jobs create drafts; they do not automatically send them or charge stored payment methods.
+- Invoice/subscription accounting, refunds, partial payments and SaaS plan billing require separate product work.
+
+## Structure
+
+```text
+prisma/             Schema, migrations and disposable demo seed
+src/app/            Marketing, authenticated app, public invoices and API routes
+src/lib/            Billing, auth, money, reporting, validation and integrations
+src/emails/         React Email templates
+src/components/     UI, reports and marketing components
+integration/        PostgreSQL-backed billing regression tests
+.github/workflows/  CI
+```

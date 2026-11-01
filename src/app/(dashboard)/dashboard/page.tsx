@@ -1,3 +1,5 @@
+import { ReportCurrencyFilter } from "@/components/report-currency-filter";
+import { reportCurrencyOptions, selectReportCurrency } from "@/lib/report-currency";
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -20,14 +22,20 @@ export const metadata: Metadata = {
   title: "Dashboard",
 };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ currency?: string | string[] }> }) {
   const session = await auth();
   if (!session?.user?.id) return null;
+  const params = await searchParams;
+  const available = await prisma.invoice.findMany({
+    where: { userId: session.user.id }, distinct: ["currency"], select: { currency: true },
+  });
+  const currencies = reportCurrencyOptions(available.map(invoice => invoice.currency));
+  const currency = selectReportCurrency(params.currency, currencies);
 
   const [invoiceStats, clientCount, recentInvoices, outstandingInvoices] = await Promise.all([
     prisma.invoice.groupBy({
       by: ["status"],
-      where: { userId: session.user.id },
+      where: { userId: session.user.id, currency },
       _sum: { total: true },
       _count: true,
     }),
@@ -41,13 +49,14 @@ export default async function DashboardPage() {
     prisma.invoice.findMany({
       where: {
         userId: session.user.id,
+        currency,
         status: { in: ["SENT", "OVERDUE"] },
       },
       select: { total: true, dueDate: true, status: true },
     }),
   ]);
 
-  const totalInvoiced = invoiceStats.reduce(
+  const totalInvoiced = invoiceStats.filter(stat => stat.status !== "CANCELLED").reduce(
     (sum, s) => sum + (s._sum.total || 0),
     0
   );
@@ -63,7 +72,7 @@ export default async function DashboardPage() {
   const stats = [
     {
       label: "Total Invoiced",
-      value: formatCurrency(totalInvoiced),
+      value: formatCurrency(totalInvoiced, currency),
       icon: DollarSign,
       color: "text-primary-600 dark:text-primary-400",
       bg: "bg-primary-50 dark:bg-primary-900/20",
@@ -71,7 +80,7 @@ export default async function DashboardPage() {
     },
     {
       label: "Paid",
-      value: formatCurrency(paidAmount),
+      value: formatCurrency(paidAmount, currency),
       icon: TrendingUp,
       color: "text-emerald-600 dark:text-emerald-400",
       bg: "bg-emerald-50 dark:bg-emerald-900/20",
@@ -79,7 +88,7 @@ export default async function DashboardPage() {
     },
     {
       label: "Pending",
-      value: formatCurrency(pendingAmount),
+      value: formatCurrency(pendingAmount, currency),
       icon: Clock,
       color: "text-amber-600 dark:text-amber-400",
       bg: "bg-amber-50 dark:bg-amber-900/20",
@@ -181,6 +190,9 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
+      <ReportCurrencyFilter currency={currency} currencies={currencies} />
+      <p className="text-xs text-gray-500 dark:text-gray-400">Monetary totals are in {currency}. Recent invoices keep their original currency; client count includes all clients.</p>
+
       {/* ─── Stats Grid — Glass panel cards ─── */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
@@ -208,7 +220,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* ─── Aging Report — Outstanding by age bucket ─── */}
-      <AgingReport buckets={bucketOutstanding(outstandingInvoices, new Date())} />
+      <AgingReport buckets={bucketOutstanding(outstandingInvoices, new Date())} currency={currency} />
 
       {/* ─── Recent Invoices — Glass panel table ─── */}
       <div className="glass-panel overflow-hidden">
@@ -287,7 +299,7 @@ export default async function DashboardPage() {
                   </div>
                   <div className="w-28 text-right flex-shrink-0">
                     <p className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums">
-                      {formatCurrency(inv.total)}
+                      {formatCurrency(inv.total, inv.currency)}
                     </p>
                   </div>
                   <div className="w-24 text-right flex-shrink-0">

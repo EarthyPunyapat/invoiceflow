@@ -1,0 +1,6 @@
+.env*
+.neon
+.git
+.next
+node_modules
+*.tsbuildinfo

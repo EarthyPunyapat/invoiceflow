@@ -1,3 +1,7 @@
+import type { Prisma } from "@prisma/client";
+import { lockOwner } from "./billing";
+import { ensureShareToken } from "./invoice-share";
+import { appUrl } from "./app-url";
 import { render } from "@react-email/components";
 import { prisma } from "@/lib/prisma";
 import { getResend } from "@/lib/resend";
@@ -5,8 +9,6 @@ import InvoiceEmail from "@/emails/invoice-email";
 import PaymentReminder, { type ReminderType } from "@/emails/payment-reminder";
 import PaymentConfirmation from "@/emails/payment-confirmation";
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_APP_URL || "https://invoiceflow.app";
 
 const FROM_EMAIL =
   process.env.RESEND_FROM_EMAIL || "InvoiceFlow <invoices@invoiceflow.app>";
@@ -22,8 +24,8 @@ function formatCurrency(amount: number, currency: string = "USD"): string {
   }).format(amount);
 }
 
-async function getInvoiceWithRelations(invoiceId: string) {
-  const invoice = await prisma.invoice.findUnique({
+async function getInvoiceWithRelations(invoiceId: string, db: Prisma.TransactionClient = prisma) {
+  const invoice = await db.invoice.findUnique({
     where: { id: invoiceId },
     include: {
       client: true,
@@ -40,10 +42,17 @@ async function getInvoiceWithRelations(invoiceId: string) {
 
 // ─── Send Invoice Email ────────────────────────────────────────────
 
-export async function sendInvoiceEmail(invoiceId: string) {
-  const invoice = await getInvoiceWithRelations(invoiceId);
+export async function sendInvoiceEmail(invoiceId: string, onlyIfUnsent = false) {
+  const owner = await prisma.invoice.findUniqueOrThrow({ where: { id: invoiceId }, select: { userId: true } });
+  return prisma.$transaction(async tx => {
+  await lockOwner(tx, owner.userId);
+  const invoice = await getInvoiceWithRelations(invoiceId, tx);
+  if (onlyIfUnsent && (invoice.invoiceEmailedAt || !["DRAFT", "SENT", "OVERDUE"].includes(invoice.status))) return { emailId: undefined };
+  if (!["DRAFT", "SENT", "OVERDUE"].includes(invoice.status)) {
+    throw new Error("This invoice cannot be sent");
+  }
 
-  const invoiceUrl = `${BASE_URL}/invoices/${invoice.id}`;
+  const invoiceUrl = `${appUrl()}/i/${await ensureShareToken(invoice.id, tx)}`;
   const businessName =
     invoice.user.businessName || invoice.user.name || "InvoiceFlow";
 
@@ -68,7 +77,7 @@ export async function sendInvoiceEmail(invoiceId: string) {
     to: [invoice.client.email],
     subject: `Invoice ${invoice.invoiceNumber} from ${businessName}`,
     html,
-  });
+  }, { idempotencyKey: `invoice-send:${invoice.id}` });
 
   if (error) {
     console.error("[sendInvoiceEmail] Resend error:", error);
@@ -76,15 +85,14 @@ export async function sendInvoiceEmail(invoiceId: string) {
   }
 
   // Mark invoice as SENT
-  await prisma.invoice.update({
-    where: { id: invoiceId },
-    data: {
-      status: "SENT",
-      sentAt: new Date(),
-    },
+  await tx.invoice.updateMany({
+    where: { id: invoiceId, status: "DRAFT" },
+    data: { status: "SENT", sentAt: new Date() },
   });
 
+  await tx.invoice.update({ where: { id: invoiceId }, data: { invoiceEmailedAt: new Date() } });
   return { emailId: data?.id };
+  }, { timeout: 30_000, maxWait: 10_000 });
 }
 
 // ─── Send Payment Reminder ─────────────────────────────────────────
@@ -92,8 +100,13 @@ export async function sendInvoiceEmail(invoiceId: string) {
 export async function sendPaymentReminder(
   invoiceId: string,
   type: ReminderType,
+  expectedCount?: number,
 ) {
-  const invoice = await getInvoiceWithRelations(invoiceId);
+  const owner = await prisma.invoice.findUniqueOrThrow({ where: { id: invoiceId }, select: { userId: true } });
+  return prisma.$transaction(async tx => {
+  await lockOwner(tx, owner.userId);
+  const invoice = await getInvoiceWithRelations(invoiceId, tx);
+  if (expectedCount !== undefined && invoice.reminderCount !== expectedCount) return { emailId: undefined, skipped: true };
 
   if (invoice.status === "PAID" || invoice.status === "CANCELLED") {
     throw new Error(
@@ -110,7 +123,7 @@ export async function sendPaymentReminder(
     ),
   );
 
-  const invoiceUrl = `${BASE_URL}/invoices/${invoice.id}`;
+  const invoiceUrl = `${appUrl()}/i/${await ensureShareToken(invoice.id, tx)}`;
   const businessName =
     invoice.user.businessName || invoice.user.name || "InvoiceFlow";
 
@@ -144,7 +157,7 @@ export async function sendPaymentReminder(
     to: [invoice.client.email],
     subject: `${subjectPrefix}Invoice ${invoice.invoiceNumber} (${daysOverdue} day${daysOverdue !== 1 ? "s" : ""} past due)`,
     html,
-  });
+  }, { idempotencyKey: `invoice-reminder:${invoice.id}:${invoice.reminderCount}` });
 
   if (error) {
     console.error("[sendPaymentReminder] Resend error:", error);
@@ -152,7 +165,7 @@ export async function sendPaymentReminder(
   }
 
   // Update reminder tracking fields
-  await prisma.invoice.update({
+  await tx.invoice.update({
     where: { id: invoiceId },
     data: {
       lastReminderSentAt: new Date(),
@@ -160,13 +173,14 @@ export async function sendPaymentReminder(
     },
   });
 
-  return { emailId: data?.id };
+  return { emailId: data?.id, skipped: false };
+  }, { timeout: 30_000, maxWait: 10_000 });
 }
 
 // ─── Send Payment Confirmation (to freelancer) ─────────────────────
 
-export async function sendPaymentConfirmation(invoiceId: string) {
-  const invoice = await getInvoiceWithRelations(invoiceId);
+export async function sendPaymentConfirmation(invoiceId: string, db: Prisma.TransactionClient = prisma) {
+  const invoice = await getInvoiceWithRelations(invoiceId, db);
 
   if (invoice.status !== "PAID") {
     throw new Error(
@@ -174,7 +188,7 @@ export async function sendPaymentConfirmation(invoiceId: string) {
     );
   }
 
-  const freelancerEmail = FREELANCER_EMAIL || invoice.user.email;
+  const freelancerEmail = invoice.user.email || FREELANCER_EMAIL;
 
   if (!freelancerEmail) {
     throw new Error("No freelancer email configured");
@@ -211,7 +225,7 @@ export async function sendPaymentConfirmation(invoiceId: string) {
     to: [freelancerEmail],
     subject: `💰 Payment received! ${invoice.client.name} paid ${formatCurrency(invoice.total, invoice.currency)}`,
     html,
-  });
+  }, { idempotencyKey: `invoice-paid:${invoice.id}` });
 
   if (error) {
     console.error("[sendPaymentConfirmation] Resend error:", error);

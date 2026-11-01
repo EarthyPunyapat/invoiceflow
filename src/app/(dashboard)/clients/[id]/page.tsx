@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { reportCurrencyOptions, selectReportCurrency } from "@/lib/report-currency";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Badge, statusVariant } from "@/components/ui/badge";
@@ -45,6 +46,7 @@ interface Client {
 export default function ClientDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const [requestedCurrency, setRequestedCurrency] = useState("USD");
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -91,16 +93,19 @@ export default function ClientDetailPage() {
     );
   }
 
-  const totalBilled = client.invoices.reduce(
+  const currencies = reportCurrencyOptions(client.invoices.map(invoice => invoice.currency));
+  const currency = selectReportCurrency(requestedCurrency, currencies);
+  const currencyInvoices = client.invoices.filter(invoice => invoice.currency === currency);
+  const totalBilled = currencyInvoices.reduce(
     (sum, inv) => sum + (inv.status !== "CANCELLED" ? inv.total : 0),
     0
   );
-  const outstanding = client.invoices.reduce(
+  const outstanding = currencyInvoices.reduce(
     (sum, inv) =>
       sum + (inv.status === "SENT" || inv.status === "OVERDUE" ? inv.total : 0),
     0
   );
-  const paid = client.invoices.reduce(
+  const paid = currencyInvoices.reduce(
     (sum, inv) => sum + (inv.status === "PAID" ? inv.total : 0),
     0
   );
@@ -153,11 +158,17 @@ export default function ClientDetailPage() {
           </div>
         </div>
 
+        <label className="mt-5 flex max-w-xs flex-col gap-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+          Currency for totals
+          <select value={currency} onChange={event => setRequestedCurrency(event.target.value)} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+            {(currencies.length ? currencies : [currency]).map(code => <option key={code} value={code}>{code}</option>)}
+          </select>
+        </label>
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
           <div className="text-center">
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {formatCurrency(totalBilled)}
+              {formatCurrency(totalBilled, currency)}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Total Billed
@@ -165,7 +176,7 @@ export default function ClientDetailPage() {
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-              {formatCurrency(paid)}
+              {formatCurrency(paid, currency)}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Paid
@@ -173,7 +184,7 @@ export default function ClientDetailPage() {
           </div>
           <div className="text-center">
             <p className={`text-2xl font-bold ${outstanding > 0 ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-white"}`}>
-              {formatCurrency(outstanding)}
+              {formatCurrency(outstanding, currency)}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Outstanding

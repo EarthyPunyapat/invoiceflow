@@ -5,7 +5,7 @@ import type { AgingBuckets } from "@/lib/aging";
  * Presentational aging report: outstanding invoice totals grouped by
  * how far past due they are. Pure props — data fetched by the caller.
  */
-export function AgingReport({ buckets }: { buckets: AgingBuckets }) {
+export function AgingReport({ buckets, currency = "USD" }: { buckets: AgingBuckets; currency?: string }) {
   const cells = [
     {
       label: "Current",
@@ -46,7 +46,7 @@ export function AgingReport({ buckets }: { buckets: AgingBuckets }) {
           Outstanding Invoices
         </h2>
         <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-          {formatCurrency(totalOutstanding)} outstanding by age
+          {formatCurrency(totalOutstanding, currency)} outstanding by age
         </p>
       </div>
 
@@ -57,7 +57,7 @@ export function AgingReport({ buckets }: { buckets: AgingBuckets }) {
               {cell.label}
             </p>
             <p className="mt-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white tabular-nums">
-              {formatCurrency(cell.value)}
+              {formatCurrency(cell.value, currency)}
             </p>
             <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{cell.hint}</p>
           </div>

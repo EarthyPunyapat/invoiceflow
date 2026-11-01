@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import {
-  monthPrefix,
-  sanitizeInvoicePrefix,
-  nextInvoiceNumber,
-} from "@/lib/invoice-number";
+import { lockOwner } from "@/lib/billing";
+import { allocateInvoiceNumber } from "@/lib/invoice-sequence";
 import {
   applyTaxPercent,
   centsToDollars,
@@ -98,34 +95,13 @@ export async function POST(req: NextRequest) {
     const subtotal = centsToDollars(subtotalCents);
     const total = centsToDollars(totalCents);
 
-    // Generate invoice number — honors settings.invoicePrefix ("PFX-0001"),
-    // falling back to the default INV-YYYYMM-XXXX scheme. The sequence
-    // lookup is scoped to this user AND to the same scheme pattern, so a
-    // custom prefix never continues the default count and per-user
-    // sequences stay independent (see invoice-number.ts for the
-    // race-condition caveat).
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { invoicePrefix: true },
-    });
-    const scheme = sanitizeInvoicePrefix(user?.invoicePrefix);
-    const schemePattern = scheme ? `${scheme}-` : monthPrefix(new Date());
-    const lastInvoice = await prisma.invoice.findFirst({
-      where: {
-        userId: session.user.id,
-        invoiceNumber: { startsWith: schemePattern },
-      },
-      orderBy: { invoiceNumber: "desc" },
-    });
-    const invoiceNumber = nextInvoiceNumber({
-      prefix: scheme,
-      date: new Date(),
-      lastNumber: lastInvoice?.invoiceNumber ?? null,
-    });
-
-    const invoice = await prisma.invoice.create({
+    const ownerId = session.user.id;
+    const invoice = await prisma.$transaction(async (tx) => {
+      await lockOwner(tx, ownerId);
+      const invoiceNumber = await allocateInvoiceNumber(tx, ownerId, new Date());
+    const created = await tx.invoice.create({
       data: {
-        userId: session.user.id,
+        userId: ownerId,
         clientId,
         invoiceNumber,
         status,
@@ -151,11 +127,15 @@ export async function POST(req: NextRequest) {
       },
     });
 
+      return created;
+    });
+
     return NextResponse.json({ invoice }, { status: 201 });
   } catch (error: any) {
+    if (error instanceof RangeError) return NextResponse.json({ error: "Invoice amounts exceed supported limits" }, { status: 400 });
     console.error("Create invoice error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to create invoice" },
+      { error: "Failed to create invoice" },
       { status: 500 }
     );
   }

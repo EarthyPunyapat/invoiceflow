@@ -42,14 +42,15 @@ function estimateStatusVariant(status: string) {
 }
 
 interface EstimatesPageProps {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 export const metadata: Metadata = {
   title: "Estimates",
 };
 
-export default async function EstimatesPage({ searchParams }: EstimatesPageProps) {
+export default async function EstimatesPage({ searchParams: searchParamsPromise }: EstimatesPageProps) {
+  const searchParams = await searchParamsPromise;
   const session = await auth();
   if (!session?.user?.id) return null;
 

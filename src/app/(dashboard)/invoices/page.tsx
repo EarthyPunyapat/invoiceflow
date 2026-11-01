@@ -26,14 +26,15 @@ const STATUS_FILTERS = [
 ];
 
 interface InvoicesPageProps {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 export const metadata: Metadata = {
   title: "Invoices",
 };
 
-export default async function InvoicesPage({ searchParams }: InvoicesPageProps) {
+export default async function InvoicesPage({ searchParams: searchParamsPromise }: InvoicesPageProps) {
+  const searchParams = await searchParamsPromise;
   const session = await auth();
   if (!session?.user?.id) return null;
 

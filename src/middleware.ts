@@ -1,4 +1,7 @@
-export { auth as middleware } from "@/lib/auth";
+import NextAuth from "next-auth";
+import { authConfig } from "@/lib/auth.config";
+
+export default NextAuth(authConfig).auth;
 
 export const config = {
   // Safety net in front of ALL dashboard-area routes. Pages and API routes

@@ -1,3 +1,4 @@
+import { normalizeReportCurrency } from "@/lib/report-currency";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -14,6 +15,9 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const search = searchParams.get("search");
+  const requestedCurrency = searchParams.get("currency");
+  const currency = requestedCurrency === null ? "USD" : normalizeReportCurrency(requestedCurrency);
+  if (!currency) return NextResponse.json({ error: "Invalid currency" }, { status: 400 });
 
   const where: any = { userId: session.user.id };
   if (search) {
@@ -32,6 +36,7 @@ export async function GET(req: NextRequest) {
           id: true,
           status: true,
           total: true,
+          currency: true,
         },
       },
     },
@@ -41,18 +46,19 @@ export async function GET(req: NextRequest) {
   const clientsWithStats = clients.map((client) => ({
     ...client,
     invoiceCount: client.invoices.length,
-    totalBilled: client.invoices.reduce(
+    statsCurrency: currency,
+    totalBilled: client.invoices.filter(invoice => invoice.currency === currency).reduce(
       (sum, inv) => sum + (inv.status !== "CANCELLED" ? inv.total : 0),
       0
     ),
-    outstanding: client.invoices.reduce(
+    outstanding: client.invoices.filter(invoice => invoice.currency === currency).reduce(
       (sum, inv) =>
         sum + (inv.status === "SENT" || inv.status === "OVERDUE" ? inv.total : 0),
       0
     ),
   }));
 
-  return NextResponse.json({ clients: clientsWithStats });
+  return NextResponse.json({ clients: clientsWithStats, currency });
 }
 
 export async function POST(req: NextRequest) {
@@ -91,7 +97,7 @@ export async function POST(req: NextRequest) {
       );
     }
     return NextResponse.json(
-      { error: error.message || "Failed to create client" },
+      { error: "Failed to create client" },
       { status: 500 }
     );
   }

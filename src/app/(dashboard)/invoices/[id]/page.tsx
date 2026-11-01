@@ -10,15 +10,16 @@ import {
 import { InvoiceActions } from "./invoice-actions";
 
 interface InvoiceDetailPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 // Auth-gated dynamic title. Metadata resolves outside the page's own
 // session guard, so query defensively: generic label on missing session,
 // unowned record, or any transient failure.
 export async function generateMetadata({
-  params,
+  params: paramsPromise,
 }: InvoiceDetailPageProps): Promise<Metadata> {
+  const params = await paramsPromise;
   try {
     const session = await auth();
     if (!session?.user?.id) return { title: "Invoice" };
@@ -32,7 +33,8 @@ export async function generateMetadata({
   }
 }
 
-export default async function InvoiceDetailPage({ params }: InvoiceDetailPageProps) {
+export default async function InvoiceDetailPage({ params: paramsPromise }: InvoiceDetailPageProps) {
+  const params = await paramsPromise;
   const session = await auth();
   if (!session?.user?.id) return null;
 

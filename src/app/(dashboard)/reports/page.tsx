@@ -1,3 +1,5 @@
+import { ReportCurrencyFilter } from "@/components/report-currency-filter";
+import { reportCurrencyOptions, selectReportCurrency } from "@/lib/report-currency";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
@@ -17,12 +19,18 @@ export const metadata: Metadata = {
   title: "Reports",
 };
 
-export default async function ReportsPage() {
+export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ currency?: string | string[] }> }) {
   const session = await auth();
   if (!session?.user?.id) return null;
+  const params = await searchParams;
+  const available = await prisma.invoice.findMany({
+    where: { userId: session.user.id }, distinct: ["currency"], select: { currency: true },
+  });
+  const currencies = reportCurrencyOptions(available.map(invoice => invoice.currency));
+  const currency = selectReportCurrency(params.currency, currencies);
 
   const invoices = await prisma.invoice.findMany({
-    where: { userId: session.user.id },
+    where: { userId: session.user.id, currency },
     select: {
       total: true,
       status: true,
@@ -52,14 +60,14 @@ export default async function ReportsPage() {
   const kpis = [
     {
       label: "Paid this month",
-      value: formatCurrency(mtdPaid),
+      value: formatCurrency(mtdPaid, currency),
       icon: DollarSign,
       color: "text-emerald-600 dark:text-emerald-400",
       bg: "bg-emerald-50 dark:bg-emerald-900/20",
     },
     {
       label: "Outstanding",
-      value: formatCurrency(outstanding),
+      value: formatCurrency(outstanding, currency),
       icon: Clock,
       color: "text-amber-600 dark:text-amber-400",
       bg: "bg-amber-50 dark:bg-amber-900/20",
@@ -85,7 +93,7 @@ export default async function ReportsPage() {
     invoices.map((inv) => ({
       total: inv.total,
       status: inv.status,
-      date: inv.createdAt,
+      date: inv.paidAt ?? inv.createdAt,
     })),
     6
   );
@@ -114,6 +122,9 @@ export default async function ReportsPage() {
           Revenue trends and client performance at a glance
         </p>
       </div>
+
+      <ReportCurrencyFilter currency={currency} currencies={currencies} />
+      <p className="text-xs text-gray-500 dark:text-gray-400">All figures on this page are in {currency}. Currencies are reported separately without conversion.</p>
 
       {/* ─── KPI Cards ─── */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -146,7 +157,7 @@ export default async function ReportsPage() {
           Paid invoices over the last 6 months
         </p>
         <div className="mt-6">
-          <BarChart data={revenuePoints} />
+          <BarChart data={revenuePoints} currency={currency} />
         </div>
       </div>
 
@@ -209,7 +220,7 @@ export default async function ReportsPage() {
                       {client.count}
                     </td>
                     <td className="py-3 text-right font-semibold tabular-nums text-gray-900 dark:text-white">
-                      {formatCurrency(client.total)}
+                      {formatCurrency(client.total, currency)}
                     </td>
                   </tr>
                 ))}

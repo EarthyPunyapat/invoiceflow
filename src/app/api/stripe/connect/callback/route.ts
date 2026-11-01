@@ -3,14 +3,14 @@ import { auth } from "@/lib/auth";
 import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+import { appUrl } from "@/lib/app-url";
 
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.redirect(
-        `${appUrl}/login?error=unauthorized`
+        `${appUrl()}/login?error=unauthorized`
       );
     }
 
@@ -24,8 +24,18 @@ export async function GET(req: NextRequest) {
 
     if (!stripeAccount) {
       return NextResponse.redirect(
-        `${appUrl}/settings?error=no_stripe_account`
+        `${appUrl()}/settings?error=no_stripe_account`
       );
+    }
+
+    if (searchParams.get("refresh") === "true") {
+      const link = await getStripe().accountLinks.create({
+        account: stripeAccount.stripeAccountId,
+        refresh_url: `${appUrl()}/api/stripe/connect/callback?refresh=true`,
+        return_url: `${appUrl()}/api/stripe/connect/callback?success=true`,
+        type: "account_onboarding",
+      });
+      return NextResponse.redirect(link.url);
     }
 
     if (success) {
@@ -35,26 +45,26 @@ export async function GET(req: NextRequest) {
         stripeAccount.stripeAccountId
       );
 
-      if (account.charges_enabled) {
+      if (account.charges_enabled && account.details_submitted) {
         await prisma.stripeAccount.update({
           where: { userId },
           data: { stripeConnectOnboardingComplete: true },
         });
 
         return NextResponse.redirect(
-          `${appUrl}/settings?stripe=connected`
+          `${appUrl()}/settings?stripe=connected`
         );
       }
     }
 
     // Refresh or incomplete — redirect accordingly
     return NextResponse.redirect(
-      `${appUrl}/settings?stripe=pending`
+      `${appUrl()}/settings?stripe=pending`
     );
   } catch (error) {
     console.error("[STRIPE_CONNECT_CALLBACK]", error);
     return NextResponse.redirect(
-      `${appUrl}/settings?error=stripe_callback_failed`
+      `${appUrl()}/settings?error=stripe_callback_failed`
     );
   }
 }

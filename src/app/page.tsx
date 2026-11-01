@@ -6,102 +6,48 @@ import {
   Bell,
   Send,
   BarChart3,
-  Shield,
   CreditCard,
-  Users,
-  Clock,
   Download,
-  Star,
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { Logo } from "@/components/logo";
-import { InteractiveCostCalculator } from "@/components/interactive-cost-calculator";
-import { ComparisonTable } from "@/components/comparison-table";
 import { PricingToggleSection } from "@/components/pricing-toggle-section";
 
-/* Below-fold / interaction-gated widgets are code-split so their JS
-   stays out of the initial landing bundle. Hero and pricing-area
-   widgets remain static imports on purpose (never behind a spinner). */
-const VideoLightbox = dynamic(
-  () => import("@/components/video-lightbox").then((m) => m.VideoLightbox),
-  { loading: () => null }
-);
 const LiveSocialProofCounter = dynamic(
   () =>
     import("@/components/live-social-proof").then(
       (m) => m.LiveSocialProofCounter
     )
 );
-const ExitIntentPopup = dynamic(
-  () =>
-    import("@/components/exit-intent-popup").then((m) => m.ExitIntentPopup),
-  { loading: () => null }
-);
-
-/* ------------------------------------------------------------------ */
-/*  Inline test ID helper — strips out at build time                  */
-/* ------------------------------------------------------------------ */
-const tid = (id: string) => process.env.NODE_ENV === "test" ? id : undefined;
-
-/* ------------------------------------------------------------------ */
-/*  Testimonial data                                                   */
-/* ------------------------------------------------------------------ */
-const testimonials = [
-  {
-    initials: "AD",
-    name: "Alex Durand",
-    role: "Freelance Designer",
-    quote:
-      "I got paid 3× faster after switching. InvoiceFlow saved me 5 hours a week I used to spend chasing invoices. Best decision I made this year.",
-    result: "Paid 3× faster",
-  },
-  {
-    initials: "JK",
-    name: "Jordan Kline",
-    role: "Web Developer",
-    quote:
-      "I was spending every Sunday morning on invoices. Now it's all automated — I haven't manually sent an invoice in months. Best $19 I spend.",
-    result: "Zero manual invoices",
-  },
-  {
-    initials: "MR",
-    name: "Maria Rivera",
-    role: "Marketing Consultant",
-    quote:
-      "The smart reminders alone are worth it. My clients pay on time now and I never have to send an awkward 'hey, just checking in' email again.",
-    result: "100% on-time payments",
-  },
-];
-
 /* ------------------------------------------------------------------ */
 /*  FAQ data                                                            */
 /* ------------------------------------------------------------------ */
 const faqs = [
   {
-    q: "Do I need a Stripe account to use InvoiceFlow?",
-    a: "Yes — InvoiceFlow is built on top of Stripe. You connect your existing Stripe account with one click via Stripe's secure OAuth. If you don't have a Stripe account yet, it's free to create one and takes about 5 minutes.",
+    q: "Do I need Stripe to create an invoice?",
+    a: "You can create invoices, download PDFs, and track their status without connecting Stripe. To accept online payments, complete Stripe Connect onboarding in Settings.",
   },
   {
-    q: "Can I customize how my invoices look?",
-    a: "Absolutely. Upload your logo, choose your brand colors, and customize the invoice template to match your business identity. You can also add custom notes, payment terms, and tax IDs.",
+    q: "Can I customize my invoices?",
+    a: "Add your business details, logo URL, accent color, invoice prefix, and notes. Your branding appears on the public invoice page and PDF.",
   },
   {
-    q: "What happens if I cancel my subscription?",
-    a: "You can cancel anytime. Your data stays in your Stripe account, and you'll maintain access to all past invoices. If you're on the annual plan, you'll keep access until the end of your billing period.",
+    q: "How do clients receive and pay an invoice?",
+    a: "Send an invoice email or copy its public share link. Clients can view it without signing in and use Stripe Checkout when online payments are available for your business.",
   },
   {
-    q: "Is my financial data safe?",
-    a: "Security is our top priority. InvoiceFlow never stores your Stripe credentials — we use Stripe's official OAuth to read transactions. All data is encrypted in transit and at rest. We are PCI compliant and Stripe Verified.",
+    q: "What can I try during early access?",
+    a: "Create clients and invoices, turn estimates into invoices, download PDFs, and review paid and overdue balances. Early access is a chance to see whether the workflow fits your business.",
   },
   {
-    q: "How quickly do invoices get generated after a Stripe payment?",
-    a: "Invoices are generated in real-time — typically within 30 seconds of a successful Stripe payment. Your client receives an email automatically with the branded invoice attached.",
+    q: "Does InvoiceFlow handle card details?",
+    a: "Online payments take place on Stripe Checkout. Clients enter their card details on Stripe's hosted payment page rather than on your public invoice page.",
   },
   {
-    q: "Do you offer refunds?",
-    a: "Yes. If InvoiceFlow isn't the right fit, contact us within 14 days of your first payment and we'll refund you in full — no questions asked.",
+    q: "Can I export my records?",
+    a: "You can download invoices as PDFs and export invoice and client records as CSV files from your account.",
   },
 ];
 
@@ -263,7 +209,7 @@ export default function LandingPage() {
               href="#pricing"
               className="nav-link text-sm font-medium text-gray-600 dark:text-gray-400"
             >
-              Pricing
+              Early access
             </Link>
             <Link
               href="#free-guide"
@@ -283,7 +229,7 @@ export default function LandingPage() {
               href="/login"
               className="group hover-cta inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm"
             >
-              Start Free Trial
+              Explore early access
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </div>
@@ -303,29 +249,23 @@ export default function LandingPage() {
             {/* Beta badge */}
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary-200 dark:border-primary-800 bg-primary-50/80 dark:bg-primary-900/30 px-4 py-1.5 text-sm font-semibold text-primary-700 dark:text-primary-300">
               <Zap className="h-3.5 w-3.5" />
-              Now in public beta
+              Early access for freelancers
             </div>
 
             {/* ── PAIN-DRIVEN HEADLINE ── */}
             <h1 className="text-balance text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-5xl lg:text-[56px] lg:leading-[1.05]">
               Stop chasing late payments.{" "}
               <span className="text-primary-600 dark:text-primary-400">
-                Your invoices write themselves now.
+                Keep your invoicing in one place.
               </span>
             </h1>
 
             {/* ── AGITATE PAIN + OFFER RELIEF ── */}
             <p className="mt-6 text-balance text-lg leading-relaxed text-gray-600 dark:text-gray-400 sm:text-xl">
-              Every hour you spend on manual invoices is an hour you&apos;re not
-              billing clients. InvoiceFlow auto-generates branded invoices from
-              Stripe instantly — so you stop losing money to paperwork and start
-              getting paid.
+              Create branded invoices, share a payment link, and keep track of
+              what&apos;s paid and overdue. InvoiceFlow brings your clients,
+              estimates, and invoices into one clear workflow.
             </p>
-
-            {/* ── LOSS AVERSION: interactive cost calculator ── */}
-            <div className="mt-6 mx-auto max-w-lg">
-              <InteractiveCostCalculator />
-            </div>
 
             {/* ── CTAs ── */}
             <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
@@ -333,68 +273,31 @@ export default function LandingPage() {
                 href="/login"
                 className="group hover-cta inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-8 py-4 text-base font-semibold text-white shadow-sm sm:w-auto"
               >
-                Start Getting Paid Faster
+                Create your first invoice
                 <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Link>
-              <VideoLightbox />
+              <Link href="#how-it-works" className="text-sm font-semibold text-gray-600 dark:text-gray-300 hover:text-primary-600">
+                See how it works
+              </Link>
             </div>
             <p className="mt-5 text-sm text-gray-400 dark:text-gray-500">
-              No credit card required · 7-day free trial · Cancel anytime
+              Sign in with Google to explore the pilot
             </p>
           </div>
 
-          {/* ── LIVE SOCIAL PROOF ROTATING COUNTER ── */}
+          {/* ── Audience ── */}
           <div className="mt-6 mx-auto max-w-lg flex justify-center">
             <LiveSocialProofCounter />
           </div>
 
-          {/* ── SOCIAL PROOF ABOVE THE FOLD ── */}
           <div className="mt-10 mx-auto max-w-3xl">
             <div className="glass-panel-strong rounded-2xl border border-gray-100 dark:border-gray-800 bg-white/90 dark:bg-[#1A1A1E]/90 p-6 sm:p-8">
-              <div className="flex items-start gap-4">
-                {/* Avatar placeholder */}
-                <div className="flex-shrink-0 flex h-12 w-12 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-sm font-bold">
-                  AD
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1 mb-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className="h-4 w-4 fill-amber-400 text-amber-400"
-                      />
-                    ))}
-                  </div>
-                  <blockquote className="text-base text-gray-700 dark:text-gray-300 italic leading-relaxed">
-                    &ldquo;I got paid 3× faster after switching. InvoiceFlow
-                    saved me 5 hours a week. Best decision I made this
-                    year.&rdquo;
-                  </blockquote>
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                      Alex Durand
-                    </span>
-                    <span className="text-gray-300 dark:text-gray-600">·</span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      Freelance Designer
-                    </span>
-                  </div>
-                </div>
-              </div>
-              {/* Trust badges */}
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Built around the work you already do</h2>
+              <p className="mt-2 text-gray-600 dark:text-gray-400">Keep client details, estimates, invoice PDFs, and payment status together.</p>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-6 border-t border-gray-100 dark:border-gray-800 pt-5">
-                <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500">
-                  <Shield className="h-4 w-4" />
-                  <span className="text-xs font-semibold">Stripe Verified</span>
-                </div>
-                <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500">
-                  <CreditCard className="h-4 w-4" />
-                  <span className="text-xs font-semibold">PCI Compliant</span>
-                </div>
-                <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500">
-                  <Users className="h-4 w-4" />
-                  <span className="text-xs font-semibold">2,000+ Users</span>
-                </div>
+                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400"><Download className="h-4 w-4" /><span className="text-xs font-semibold">PDF invoices</span></div>
+                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400"><CreditCard className="h-4 w-4" /><span className="text-xs font-semibold">Stripe-hosted payments</span></div>
+                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400"><BarChart3 className="h-4 w-4" /><span className="text-xs font-semibold">Payment tracking</span></div>
               </div>
             </div>
           </div>
@@ -406,10 +309,10 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
-              Your invoices, on autopilot
+              From invoice to payment
             </h2>
             <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
-              Three steps to never manually sending an invoice again
+              A straightforward workflow for your freelance business
             </p>
           </div>
 
@@ -423,15 +326,15 @@ export default function LandingPage() {
                 <span className="text-lg font-bold">1</span>
               </div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Connect Stripe in one click
+                Create your invoice
               </h3>
               <p className="mt-2 text-gray-600 dark:text-gray-400 leading-relaxed">
-                Link your Stripe account securely — no copy-pasting API keys, no
-                setup headaches. InvoiceFlow reads your transactions instantly.
+                Choose a client, add line items and tax, and set a due date.
+                Turn an accepted estimate into an invoice when you are ready.
               </p>
               <div className="mt-6 flex items-center gap-2 text-sm font-medium text-primary-600 dark:text-primary-400">
                 <CheckCircle2 className="h-4 w-4" />
-                <span>Takes under 60 seconds</span>
+                <span>Keep your details together</span>
               </div>
             </div>
 
@@ -444,15 +347,15 @@ export default function LandingPage() {
                 <span className="text-lg font-bold">2</span>
               </div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Invoices appear automatically
+                Send a public invoice link
               </h3>
               <p className="mt-2 text-gray-600 dark:text-gray-400 leading-relaxed">
-                Every Stripe payment triggers a branded, numbered invoice. They
-                appear in your dashboard. You never type another invoice again.
+                Email your invoice or copy its share link. Your client can view
+                your branded invoice without creating an account.
               </p>
               <div className="mt-6 flex items-center gap-2 text-sm font-medium text-primary-600 dark:text-primary-400">
                 <CheckCircle2 className="h-4 w-4" />
-                <span>Zero manual work</span>
+                <span>Easy to view and share</span>
               </div>
             </div>
 
@@ -465,16 +368,15 @@ export default function LandingPage() {
                 <span className="text-lg font-bold">3</span>
               </div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Get paid without the awkwardness
+                Track payments and follow up
               </h3>
               <p className="mt-2 text-gray-600 dark:text-gray-400 leading-relaxed">
-                Smart reminders go out automatically for overdue invoices.
-                Clients pay on time — and you never send another &ldquo;just
-                checking in&rdquo; email.
+                Offer Stripe Checkout to clients when your business is connected.
+                Track outstanding invoices and use scheduled reminders to follow up.
               </p>
               <div className="mt-6 flex items-center gap-2 text-sm font-medium text-primary-600 dark:text-primary-400">
                 <CheckCircle2 className="h-4 w-4" />
-                <span>Set and forget</span>
+                <span>See paid and overdue invoices</span>
               </div>
             </div>
           </div>
@@ -503,10 +405,10 @@ export default function LandingPage() {
                 <Zap className="h-5 w-5" />
               </div>
               <h3 className="font-semibold text-gray-900 dark:text-white">
-                Never type another invoice
+                Create and reuse invoice details
               </h3>
               <p className="mt-2 text-base sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                Invoices appear automatically from your Stripe transactions in
+                Send a public invoice link from your Stripe transactions in
                 real-time. Zero data entry, zero copy-pasting.
               </p>
             </div>
@@ -523,8 +425,8 @@ export default function LandingPage() {
                 Get paid without awkward follow-ups
               </h3>
               <p className="mt-2 text-base sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                Friendly payment reminders go out automatically at the right
-                time. No more &ldquo;hey, just checking in&rdquo; emails.
+                Scheduled reminders help you follow up on overdue invoices
+                without writing every message from scratch.
               </p>
             </div>
 
@@ -537,11 +439,11 @@ export default function LandingPage() {
                 <Send className="h-5 w-5" />
               </div>
               <h3 className="font-semibold text-gray-900 dark:text-white">
-                Deliver invoices instantly
+                Share a clear invoice
               </h3>
               <p className="mt-2 text-base sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                Professional, branded invoices land in your client&apos;s inbox
-                the moment a payment processes. One-click resend if needed.
+                Send an email with a public invoice link, or download a PDF
+                to share through your usual channels.
               </p>
             </div>
 
@@ -595,7 +497,7 @@ export default function LandingPage() {
                 href="/login"
                 className="group hover-bg-shift inline-flex items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1A1A1E] px-8 py-4 text-base font-semibold text-gray-700 dark:text-gray-300"
               >
-                Start Free Trial
+                Explore early access
                 <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Link>
             </div>
@@ -606,115 +508,19 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── Testimonials Section ─── */}
-      <section className="bg-gray-50 dark:bg-[#111114] py-24 sm:py-32">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
-              Trusted by 2,000+ freelancers
-            </h2>
-            <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
-              Real results from real users who stopped chasing invoices
-            </p>
-          </div>
-
-          <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {testimonials.map((t, i) => (
-              <div
-                key={t.name}
-                className="hover-lift stagger-card rounded-2xl bg-white dark:bg-[#1A1A1E] p-6 sm:p-8 shadow-sm ring-1 ring-gray-100 dark:ring-gray-800"
-                style={{ animationDelay: `${i * 60}ms` }}
-              >
-                {/* Stars */}
-                <div className="flex items-center gap-1 mb-4">
-                  {[...Array(5)].map((_, si) => (
-                    <Star
-                      key={si}
-                      className="h-4 w-4 fill-amber-400 text-amber-400"
-                    />
-                  ))}
-                </div>
-
-                <blockquote className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                  &ldquo;{t.quote}&rdquo;
-                </blockquote>
-
-                {/* Result highlight */}
-                <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-accent-50 dark:bg-accent-900/30 px-3 py-1 text-xs font-semibold text-accent-700 dark:text-accent-300">
-                  <CheckCircle2 className="h-3 w-3" />
-                  {t.result}
-                </div>
-
-                {/* Author */}
-                <div className="mt-5 flex items-center gap-3 border-t border-gray-100 dark:border-gray-800 pt-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/40 text-sm font-bold text-primary-700 dark:text-primary-300">
-                    {t.initials}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                      {t.name}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {t.role}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Pricing — Toggle + Cards with Decoy Effect ─── */}
+      {/* ─── Early access ─── */}
       <section id="pricing" className="py-24 sm:py-32 bg-white dark:bg-[#0A0A0B]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
-            {/* Urgency badge */}
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-900/20 px-4 py-1.5 text-sm font-semibold text-amber-700 dark:text-amber-300">
-              <Clock className="h-3.5 w-3.5" />
-              Early adopter pricing — lock in $19/mo forever
-            </div>
-
             <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
-              Reclaim your time for less than a coffee a day
+              Explore InvoiceFlow during early access
             </h2>
             <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
-              Manual invoicing costs you $4,500/year in lost billable time.
-              InvoiceFlow costs $228.
+              Try the invoicing workflow and see how it fits your business.
+              Wider launch plans and pricing are still being shaped.
             </p>
           </div>
-
-          {/* ── Monthly/Annual toggle ── */}
           <PricingToggleSection />
-
-          {/* Trust reassurance */}
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-8">
-            <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500">
-              <Shield className="h-4 w-4" />
-              <span className="text-xs font-semibold">14-day money-back guarantee</span>
-            </div>
-            <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500">
-              <CreditCard className="h-4 w-4" />
-              <span className="text-xs font-semibold">Secure Stripe checkout</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Comparison Table ── InvoiceFlow vs Manual vs FreshBooks */}
-      <section className="py-24 sm:py-32 bg-white dark:bg-[#0A0A0B]">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
-              Why InvoiceFlow wins
-            </h2>
-            <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
-              Compared to the alternatives, InvoiceFlow is faster, cheaper, and works on autopilot
-            </p>
-          </div>
-          <div className="mt-16 mx-auto max-w-4xl">
-            <ComparisonTable />
-          </div>
         </div>
       </section>
 
@@ -754,17 +560,6 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <div className="mt-12 text-center">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Still have questions?{" "}
-              <a
-                href="mailto:support@invoiceflow.com"
-                className="font-medium text-primary-600 dark:text-primary-400 hover:underline"
-              >
-                Email our support team
-              </a>
-            </p>
-          </div>
         </div>
       </section>
 
@@ -773,27 +568,23 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-              Reclaim your Sundays. Start getting paid faster.
+              Keep your next invoice under control.
             </h2>
             <p className="mt-4 text-lg text-gray-400 dark:text-gray-500 leading-relaxed">
-              Join 2,000+ freelancers and small businesses who stopped chasing
-              invoices and started focusing on what they do best.
+              Bring your clients, estimates, invoices, and payment status into
+              one place. Start with your next project.
             </p>
             <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Link
                 href="/login"
                 className="group hover-cta-white inline-flex items-center gap-2 rounded-xl bg-white px-8 py-4 text-base font-semibold text-gray-900 shadow-sm"
               >
-                Start Getting Paid Faster
+                Create your first invoice
                 <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Link>
-              <VideoLightbox
-                triggerClassName="inline-flex items-center gap-2 rounded-xl border border-white/20 px-8 py-4 text-base font-semibold text-white hover:bg-white/10 transition-colors"
-                triggerLabel="See it in 60 seconds"
-              />
             </div>
             <p className="mt-6 text-sm text-gray-500">
-              No credit card required · Free 7-day trial · Cancel anytime
+              Early access for freelancers and independent businesses
             </p>
           </div>
         </div>
@@ -819,7 +610,7 @@ export default function LandingPage() {
                 href="#pricing"
                 className="nav-link text-sm text-gray-500 dark:text-gray-400"
               >
-                Pricing
+                Early access
               </Link>
               <Link
                 href="#free-guide"
@@ -842,8 +633,6 @@ export default function LandingPage() {
         </div>
       </footer>
 
-      {/* ── Exit-intent popup (desktop only, once per session) ── */}
-      <ExitIntentPopup />
     </div>
   );
 }

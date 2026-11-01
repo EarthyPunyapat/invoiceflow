@@ -43,6 +43,7 @@ export function dollarsToCents(dollars: number): number {
     parseInt(intPart, 10) * 100 + parseInt(decPart.slice(0, 2), 10);
   const roundUp = (decPart[2] ?? "0") >= "5";
   const magnitude = cents + (roundUp ? 1 : 0);
+  if (!Number.isSafeInteger(magnitude)) throw new RangeError("Amount exceeds safe integer cents");
   return negative ? -magnitude : magnitude;
 }
 
@@ -61,7 +62,11 @@ export function formatMoneyFromCents(cents: number, currency = "USD"): string {
 
 /** Exact sum of any number of cent amounts (integers never drift). */
 export function sumCents(...amounts: number[]): number {
-  return amounts.reduce((sum, c) => sum + c, 0);
+  return amounts.reduce((sum, c) => {
+    const total = sum + c;
+    if (!Number.isSafeInteger(c) || !Number.isSafeInteger(total)) throw new RangeError("Amount exceeds safe integer cents");
+    return total;
+  }, 0);
 }
 
 export interface TaxBreakdown {
@@ -80,9 +85,11 @@ export function applyTaxPercent(
   taxPercent: number
 ): TaxBreakdown {
   const taxCents = roundHalfUp((subtotalCents * taxPercent) / 100);
+  if (!Number.isFinite(taxPercent) || !Number.isSafeInteger(taxCents)) throw new RangeError("Tax exceeds safe integer cents");
+  const totalCents = sumCents(subtotalCents, taxCents);
   return {
     subtotalCents,
     taxCents,
-    totalCents: subtotalCents + taxCents,
+    totalCents,
   };
 }

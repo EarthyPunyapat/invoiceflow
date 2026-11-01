@@ -9,15 +9,16 @@ import { Button } from "@/components/ui/button";
 import { EstimateActions } from "./estimate-actions";
 
 interface EstimateDetailPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 // Auth-gated dynamic title. Metadata resolves outside the page's own
 // session guard, so query defensively: generic label on missing session,
 // unowned record, or any transient failure.
 export async function generateMetadata({
-  params,
+  params: paramsPromise,
 }: EstimateDetailPageProps): Promise<Metadata> {
+  const params = await paramsPromise;
   try {
     const session = await auth();
     if (!session?.user?.id) return { title: "Estimate" };
@@ -32,8 +33,9 @@ export async function generateMetadata({
 }
 
 export default async function EstimateDetailPage({
-  params,
+  params: paramsPromise,
 }: EstimateDetailPageProps) {
+  const params = await paramsPromise;
   const session = await auth();
   if (!session?.user?.id) return null;
 

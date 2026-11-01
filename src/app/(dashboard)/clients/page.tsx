@@ -1,3 +1,4 @@
+import { reportCurrencyOptions, selectReportCurrency } from "@/lib/report-currency";
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -19,14 +20,15 @@ import { Input } from "@/components/ui/input";
 import { parseListParams } from "@/lib/invoice-filters";
 
 interface ClientsPageProps {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 export const metadata: Metadata = {
   title: "Clients",
 };
 
-export default async function ClientsPage({ searchParams }: ClientsPageProps) {
+export default async function ClientsPage({ searchParams: searchParamsPromise }: ClientsPageProps) {
+  const searchParams = await searchParamsPromise;
   const session = await auth();
   if (!session?.user?.id) return null;
 
@@ -50,7 +52,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
     ];
   }
 
-  const [clients, total] = await Promise.all([
+  const [clients, total, availableCurrencies] = await Promise.all([
     prisma.client.findMany({
       where,
       include: {
@@ -59,6 +61,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
             id: true,
             status: true,
             total: true,
+            currency: true,
           },
         },
       },
@@ -67,13 +70,17 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
       take: pageSize,
     }),
     prisma.client.count({ where }),
+    prisma.invoice.findMany({ where: { userId: session.user.id }, distinct: ["currency"], select: { currency: true } }),
   ]);
+  const currencies = reportCurrencyOptions(availableCurrencies.map(invoice => invoice.currency));
+  const currency = selectReportCurrency(searchParams.currency, currencies);
 
   const totalPages = Math.ceil(total / pageSize);
 
   function buildUrl(newParams: Record<string, string>) {
     const params = new URLSearchParams();
     if (search) params.set("q", search);
+    params.set("currency", currency);
     if (newParams.page) params.set("page", newParams.page);
     return `/clients?${params.toString()}`;
   }
@@ -81,11 +88,11 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
   const clientsWithStats = clients.map((client) => ({
     ...client,
     invoiceCount: client.invoices.length,
-    totalBilled: client.invoices.reduce(
+    totalBilled: client.invoices.filter(invoice => invoice.currency === currency).reduce(
       (sum, inv) => sum + (inv.status !== "CANCELLED" ? inv.total : 0),
       0
     ),
-    outstanding: client.invoices.reduce(
+    outstanding: client.invoices.filter(invoice => invoice.currency === currency).reduce(
       (sum, inv) =>
         sum + (inv.status === "SENT" || inv.status === "OVERDUE" ? inv.total : 0),
       0
@@ -120,7 +127,8 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
       </div>
 
       {/* Search */}
-      <form action="/clients" method="GET" className="relative max-w-md">
+      <form action="/clients" method="GET" className="flex flex-wrap items-end gap-3">
+        <div className="relative w-full max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <Input
           name="q"
@@ -128,6 +136,14 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
           defaultValue={search}
           className="pl-9"
         />
+        </div>
+        <label className="flex flex-col gap-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+          Currency for totals
+          <select name="currency" defaultValue={currency} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+            {(currencies.length ? currencies : [currency]).map(code => <option key={code} value={code}>{code}</option>)}
+          </select>
+        </label>
+        <Button type="submit" variant="outline">Apply</Button>
       </form>
 
       {/* Client grid */}
@@ -201,15 +217,15 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Billed
+                    Billed ({currency})
                   </p>
                   <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                    {formatCurrency(client.totalBilled)}
+                    {formatCurrency(client.totalBilled, currency)}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Outstanding
+                    Outstanding ({currency})
                   </p>
                   <p
                     className={`text-sm font-semibold ${
@@ -218,7 +234,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
                         : "text-gray-900 dark:text-white"
                     }`}
                   >
-                    {formatCurrency(client.outstanding)}
+                    {formatCurrency(client.outstanding, currency)}
                   </p>
                 </div>
               </div>

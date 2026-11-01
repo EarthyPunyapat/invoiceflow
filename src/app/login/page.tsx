@@ -99,9 +99,8 @@ export default async function LoginPage() {
 
               {/* Info */}
               <p className="mt-6 text-center text-xs text-gray-400">
-                By signing in, you agree to our Terms of Service and Privacy
-                Policy. We only use Google for authentication — we never post
-                anything without your permission.
+                Use your Google account to sign in and manage your clients
+                and invoices.
               </p>
             </div>
           </div>

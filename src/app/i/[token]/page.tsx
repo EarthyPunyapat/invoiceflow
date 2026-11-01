@@ -6,14 +6,15 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { PayButton } from "./pay-button";
 
 interface InvoicePublicPageProps {
-  params: { token: string };
-  searchParams: { [key: string]: string | string[] | undefined };
+  params: Promise<{ token: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 // Public share links must never be indexed.
 export async function generateMetadata({
-  params,
+  params: paramsPromise,
 }: InvoicePublicPageProps): Promise<Metadata> {
+  const params = await paramsPromise;
   const invoice = isValidShareToken(params.token)
     ? await prisma.invoice.findFirst({
         where: { shareToken: params.token },
@@ -34,9 +35,11 @@ export async function generateMetadata({
  * and shows the online-payment CTA only while the invoice is payable.
  */
 export default async function InvoicePublicPage({
-  params,
-  searchParams,
+  params: paramsPromise,
+  searchParams: searchParamsPromise,
 }: InvoicePublicPageProps) {
+  const params = await paramsPromise;
+  const searchParams = await searchParamsPromise;
   const { token } = params;
   if (!isValidShareToken(token)) notFound();
 
@@ -61,7 +64,7 @@ export default async function InvoicePublicPage({
       },
     },
   });
-  if (!invoice) notFound();
+  if (!invoice || invoice.status === "DRAFT" || invoice.status === "CANCELLED") notFound();
 
   // Branding with safe fallbacks; accent color only applied when it's a
   // well-formed hex value so arbitrary strings never reach inline styles.

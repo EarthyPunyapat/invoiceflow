@@ -1,3 +1,4 @@
+import { normalizeReportCurrency } from "@/lib/report-currency";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -11,6 +12,12 @@ export async function GET(req: NextRequest) {
     }
 
     const userId = session.user.id;
+    const requestedCurrency = req.nextUrl.searchParams.get("currency");
+    const currency = requestedCurrency === null ? "USD" : normalizeReportCurrency(requestedCurrency);
+    if (!currency) return NextResponse.json({ error: "Invalid currency" }, { status: 400 });
+    const now = new Date();
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    const lastMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
 
     // Run all stats queries in parallel. The status breakdown comes from
     // ONE groupBy instead of five separate count() calls, cutting invoice
@@ -33,7 +40,7 @@ export async function GET(req: NextRequest) {
 
       // Total revenue (paid invoices)
       prisma.invoice.aggregate({
-        where: { userId, status: "PAID" },
+        where: { userId, currency, status: "PAID" },
         _sum: { total: true },
       }),
 
@@ -48,9 +55,10 @@ export async function GET(req: NextRequest) {
       prisma.invoice.aggregate({
         where: {
           userId,
+          currency,
           status: "PAID",
           paidAt: {
-            gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+            gte: monthStart,
           },
         },
         _sum: { total: true },
@@ -60,10 +68,11 @@ export async function GET(req: NextRequest) {
       prisma.invoice.aggregate({
         where: {
           userId,
+          currency,
           status: "PAID",
           paidAt: {
-            gte: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1),
-            lt: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+            gte: lastMonthStart,
+            lt: monthStart,
           },
         },
         _sum: { total: true },
@@ -76,6 +85,7 @@ export async function GET(req: NextRequest) {
         select: {
           id: true,
           invoiceNumber: true,
+          total: true,
           status: true,
           dueDate: true,
           currency: true,
@@ -116,6 +126,7 @@ export async function GET(req: NextRequest) {
           },
         },
         revenue: {
+          currency,
           total: totalRevenue._sum.total || 0,
           thisMonth,
           lastMonth,

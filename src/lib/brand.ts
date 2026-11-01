@@ -1,8 +1,8 @@
 export const BRAND = {
   name: "InvoiceFlow",
-  tagline: "Auto-generate invoices from Stripe. Get paid faster.",
+  tagline: "Create invoices. Share payment links. Track what is owed.",
   description:
-    "InvoiceFlow connects to your Stripe account and automatically creates professional invoices for every payment. We handle the paperwork so you can focus on your business.",
+    "Create and share professional invoices, accept payments with Stripe Connect, and track clients, estimates, and overdue balances.",
   url: "https://invoiceflow.app",
   colors: {
     primary: "#4F46E5", // indigo-600

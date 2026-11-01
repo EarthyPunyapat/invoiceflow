@@ -1,3 +1,5 @@
+import type { EstimateStatus } from "@prisma/client";
+import { lockOwner } from "@/lib/billing";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -6,8 +8,9 @@ import { estimateStatusUpdateSchema } from "@/lib/validators";
 // ─── GET /api/estimates/[id] ────────────────────────────────────────
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -28,86 +31,71 @@ export async function GET(
   return NextResponse.json({ estimate });
 }
 
-// ─── PATCH /api/estimates/[id] — status transitions ─────────────────
+const transitions: Record<EstimateStatus, EstimateStatus[]> = {
+  DRAFT: ["SENT"],
+  SENT: ["ACCEPTED", "DECLINED"],
+  ACCEPTED: [],
+  DECLINED: [],
+  CONVERTED: [],
+};
+
+// Conversion is performed exclusively by the atomic convert endpoint.
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const ownerId = session.user.id;
   try {
     const parsed = estimateStatusUpdateSchema.safeParse(await req.json());
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message || "Invalid status" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: parsed.error.issues[0]?.message || "Invalid status" }, { status: 400 });
     }
     const { status } = parsed.data;
-
-    const estimate = await prisma.estimate.findFirst({
-      where: { id: params.id, userId: session.user.id },
-    });
-
-    if (!estimate) {
-      return NextResponse.json({ error: "Estimate not found" }, { status: 404 });
-    }
-
-    const updateData: any = { status };
-    // First send stamps the issue date.
-    if (status === "SENT" && !estimate.issueDate) {
-      updateData.issueDate = new Date();
-    }
-
-    const updated = await prisma.estimate.update({
-      where: { id: params.id },
-      data: updateData,
-      include: {
-        client: true,
-        items: { orderBy: { createdAt: "asc" } },
-      },
-    });
-
-    return NextResponse.json({ estimate: updated });
-  } catch (error: any) {
+    return await prisma.$transaction(async tx => {
+      await lockOwner(tx, ownerId);
+      const estimate = await tx.estimate.findFirst({ where: { id: params.id, userId: ownerId } });
+      if (!estimate) return NextResponse.json({ error: "Estimate not found" }, { status: 404 });
+      if (estimate.status === "CONVERTED" || status === "CONVERTED" ||
+          (estimate.status !== status && !transitions[estimate.status].includes(status))) {
+        return NextResponse.json({ error: "Invalid estimate status transition" }, { status: 409 });
+      }
+      const updated = await tx.estimate.update({
+        where: { id: estimate.id },
+        data: { status, ...(status === "SENT" && !estimate.issueDate ? { issueDate: new Date() } : {}) },
+        include: { client: true, items: { orderBy: { createdAt: "asc" } } },
+      });
+      return NextResponse.json({ estimate: updated });
+    }, { timeout: 30_000, maxWait: 10_000 });
+  } catch (error) {
     console.error("Update estimate error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to update estimate" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to update estimate" }, { status: 500 });
   }
 }
 
-// ─── DELETE /api/estimates/[id] — drafts only ───────────────────────
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const ownerId = session.user.id;
+  try {
+    return await prisma.$transaction(async tx => {
+      await lockOwner(tx, ownerId);
+      const estimate = await tx.estimate.findFirst({ where: { id: params.id, userId: ownerId } });
+      if (!estimate) return NextResponse.json({ error: "Estimate not found" }, { status: 404 });
+      if (estimate.status !== "DRAFT") {
+        return NextResponse.json({ error: "Only draft estimates can be deleted" }, { status: 409 });
+      }
+      await tx.estimate.delete({ where: { id: estimate.id } });
+      return NextResponse.json({ success: true });
+    }, { timeout: 30_000, maxWait: 10_000 });
+  } catch (error) {
+    console.error("Delete estimate error:", error);
+    return NextResponse.json({ error: "Failed to delete estimate" }, { status: 500 });
   }
-
-  const estimate = await prisma.estimate.findFirst({
-    where: { id: params.id, userId: session.user.id },
-  });
-
-  if (!estimate) {
-    return NextResponse.json({ error: "Estimate not found" }, { status: 404 });
-  }
-
-  // Only allow deleting DRAFT estimates
-  if (estimate.status !== "DRAFT") {
-    return NextResponse.json(
-      { error: "Only draft estimates can be deleted" },
-      { status: 400 }
-    );
-  }
-
-  await prisma.estimate.delete({ where: { id: params.id } });
-
-  return NextResponse.json({ success: true });
 }

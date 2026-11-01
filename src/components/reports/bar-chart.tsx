@@ -14,9 +14,11 @@ export interface BarChartPoint {
 export function BarChart({
   data,
   height = 160,
+  currency = "USD",
 }: {
   data: BarChartPoint[];
   height?: number;
+  currency?: string;
 }) {
   const W = 600;
   const H = height;
@@ -57,7 +59,7 @@ export function BarChart({
         const x = i * slot + (slot - barWidth) / 2;
         return (
           <g key={point.label}>
-            <title>{`${point.label}: ${formatCurrency(point.value)}`}</title>
+            <title>{`${point.label}: ${formatCurrency(point.value, currency)}`}</title>
             <rect
               x={x}
               y={plotH - barH}
@@ -66,7 +68,7 @@ export function BarChart({
               rx={6}
               className="fill-primary-600 dark:fill-primary-400"
             >
-              <title>{`${point.label}: ${formatCurrency(point.value)}`}</title>
+              <title>{`${point.label}: ${formatCurrency(point.value, currency)}`}</title>
             </rect>
             <text
               x={i * slot + slot / 2}

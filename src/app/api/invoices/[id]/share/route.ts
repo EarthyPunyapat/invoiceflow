@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { generateShareToken } from "@/lib/token";
+import { ensureShareToken } from "@/lib/invoice-share";
+import { appUrl } from "@/lib/app-url";
 
 // POST /api/invoices/[id]/share — issue (or reuse) the public share link
 // for a SENT or OVERDUE invoice. Tokens are 128-bit random hex, safe to
 // expose as unguessable URLs (/i/[token]).
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -37,28 +39,8 @@ export async function POST(
       );
     }
 
-    let shareToken = invoice.shareToken;
-    if (!shareToken) {
-      shareToken = generateShareToken();
-      try {
-        await prisma.invoice.update({
-          where: { id: invoice.id },
-          data: { shareToken },
-        });
-      } catch {
-        // Rare race: two tabs issued tokens simultaneously and the unique
-        // index kept only one — reuse whichever token was persisted.
-        const fresh = await prisma.invoice.findUnique({
-          where: { id: invoice.id },
-          select: { shareToken: true },
-        });
-        shareToken = fresh?.shareToken ?? shareToken;
-      }
-    }
-
-    const base = (process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin)
-      .trim()
-      .replace(/\/+$/, "");
+    const shareToken = await ensureShareToken(invoice.id);
+    const base = appUrl();
 
     return NextResponse.json({ url: `${base}/i/${shareToken}` });
   } catch (error) {

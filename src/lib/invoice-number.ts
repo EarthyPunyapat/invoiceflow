@@ -7,7 +7,7 @@
  * e.g. INV-202608 for August 2026.
  */
 export function monthPrefix(d: Date): string {
-  return `INV-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}`;
+  return `INV-${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
 /**
@@ -53,10 +53,8 @@ export function sanitizeInvoicePrefix(
  * invoiceNumber startsWith the SAME scheme's pattern ("${prefix}-" for a
  * custom scheme, "${monthPrefix(now)}" for the default one) and scoped to
  * that user's invoices — per-user prefixes require independent sequences
- * and must not leak counts across accounts. Caveat: Invoice.invoiceNumber
- * carries no @unique constraint in the Prisma schema, so two concurrent
- * POSTs can compute the same seq; acceptable for this single-user MVP,
- * documented rather than migrated here.
+ * and must not leak counts across accounts. Writers allocate numbers under
+ * a per-owner PostgreSQL transaction lock and a database unique constraint.
  */
 export function nextInvoiceNumber(opts: {
   prefix: string | null | undefined;

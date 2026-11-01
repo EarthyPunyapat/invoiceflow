@@ -16,7 +16,7 @@ export const estimateCreateSchema = z
     items: z.array(lineItemSchema).min(1).max(500),
     issueDate: isoDateSchema,
     expiryDate: isoDateSchema,
-    status: estimateStatusSchema.default("DRAFT"),
+    status: z.enum(["DRAFT", "SENT"]).default("DRAFT"),
     currency: currencySchema,
     tax: z.number().min(0).max(1_000_000).default(0),
     notes: notesSchema,

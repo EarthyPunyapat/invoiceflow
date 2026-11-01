@@ -9,8 +9,9 @@ export const runtime = "nodejs";
 // GET /api/invoices/[id]/pdf — render the invoice as a PDF document.
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     const session = await auth();
     if (!session?.user?.id) {

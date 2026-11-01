@@ -110,6 +110,11 @@ model Invoice {
   clientId      String
   invoiceNumber String
   shareToken    String?       @unique
+  checkoutSessionId String?   @unique
+  checkoutAttempt Int        @default(0)
+  stripeInvoiceId String?    @unique
+  paymentNotifiedAt DateTime?
+  invoiceEmailedAt DateTime?
   status        InvoiceStatus @default(DRAFT)
   subtotal      Float
   tax           Float         @default(0)
@@ -131,6 +136,7 @@ model Invoice {
   @@index([userId])
   @@index([clientId])
   @@index([status, dueDate])
+  @@unique([userId, invoiceNumber])
 }
 
 model InvoiceItem {

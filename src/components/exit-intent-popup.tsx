@@ -149,7 +149,7 @@ export function ExitIntentPopup() {
           {/* CTA buttons */}
           <div className="mt-6 flex flex-col gap-3">
             <a
-              href="#"
+              href="/guides/5-ways-get-paid-faster.pdf"
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-primary-700 hover:shadow-md"
             >
               <svg
@@ -173,7 +173,7 @@ export function ExitIntentPopup() {
               href="/login"
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1A1A1E] px-6 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-all hover:bg-gray-50 dark:hover:bg-gray-800"
             >
-              Start Free Trial
+              Explore early access
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="16"

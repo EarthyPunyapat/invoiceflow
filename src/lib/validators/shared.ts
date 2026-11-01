@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeReportCurrency } from "../report-currency";
 
 /** Prisma InvoiceStatus enum mirror. */
 export const invoiceStatusSchema = z.enum([
@@ -25,6 +26,7 @@ export const currencySchema = z
   .length(3)
   .regex(/^[A-Za-z]{3}$/, "currency must be a 3-letter code")
   .transform((s) => s.toUpperCase())
+  .refine(code => normalizeReportCurrency(code) !== null, "currency must be a recognized ISO currency code")
   .default("USD");
 
 /** Accepts ISO strings (and Date instances) → real Date for Prisma. */
@@ -33,7 +35,7 @@ export const isoDateSchema = z.coerce.date();
 /** Invoice/estimate line item — money math happens server-side in cents. */
 export const lineItemSchema = z.object({
   description: z.string().trim().min(1).max(500),
-  quantity: z.number().positive().max(1_000_000),
+  quantity: z.number().int().positive().max(1_000_000),
   unitPrice: z.number().min(0).max(1e13),
 });
 
