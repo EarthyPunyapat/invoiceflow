@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { CreditCard } from "lucide-react";
+import { ApiKeysManager } from "@/components/api-keys-manager";
 import { StripeConnectButton } from "./stripe-connect-button";
 import { ProfileForm } from "./profile-form";
 
@@ -182,6 +183,7 @@ export default async function SettingsPage() {
           </p>
         </details>
       </section>
+      <ApiKeysManager />
       <section className="rounded-xl bg-gray-50 p-6">
         <h2 className="text-sm font-semibold">Early access</h2>
         <p className="mt-2 text-sm leading-relaxed text-gray-600">
