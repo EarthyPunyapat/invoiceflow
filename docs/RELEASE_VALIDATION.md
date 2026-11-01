@@ -38,5 +38,26 @@ OAuth exchange.
   a public commercial launch. The UI currently describes early access, without
   subscription billing or fabricated customer endorsements.
 
-The code and reusable environment instructions were prepared locally. No GitHub
-push, Vercel deployment or environment publication was performed by this task.
+The original validation was local. The code was subsequently pushed to GitHub
+as `7b4a189`, triggering the linked Vercel deployment.
+
+## Production incident and release correction
+
+The reported production digest `3455935868` was confirmed by Vercel logs as
+Prisma `P2022`: `Invoice.checkoutSessionId` was missing. Authentication reached
+the dashboard, but the database had not received the billing-safety migration.
+The release pipeline had generated Prisma Client without applying its schema.
+
+The follow-up production build now includes a guarded migration step. It verifies
+legacy schema before baselining, refuses drift or duplicate invoice numbers,
+serializes releases and applies committed migrations before building. It does
+not use `db push`, resets or delete application data. External verification of
+the completed follow-up deployment remains required.
+
+The follow-up passed 156 unit tests, all 51 database integration tests (including
+8 production rollout cases), ESLint, TypeScript and the production build.
+The rollout regression reproduced `P2022 Invoice.checkoutSessionId` before the
+gate, then read the original invoice successfully afterward with its data
+preserved. Empty databases, repeat/concurrent builds and refusal of drift,
+duplicates, unknown migration history and mismatched targets were also tested.
+Published migration SQL and checksums were left unchanged.

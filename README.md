@@ -119,7 +119,7 @@ pnpm run typecheck
 pnpm audit --prod --audit-level high
 ```
 
-The build generates Prisma Client, compiles all routes, and produces the production application. Google Fonts access is needed for the configured `next/font` loader. Prisma downloads must retain TLS and checksum verification.
+The build generates Prisma Client, compiles all routes, and produces the production application. Production Vercel builds first verify and migrate the database with a guarded release step; local and preview builds require explicit database preparation. Google Fonts access is needed for the configured `next/font` loader. Prisma downloads must retain TLS and checksum verification.
 
 Integration tests use a separate disposable **local** database named `invoiceflow_test`. Create it once:
 

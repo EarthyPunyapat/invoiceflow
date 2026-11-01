@@ -10,7 +10,11 @@ Create separate Neon databases or branches for development, preview and producti
 
 In Vercel, import the repository, select the Next.js preset and Node.js 22, and keep the install/build commands from `vercel.json`. The repository pins pnpm in `package.json`.
 
-The build command generates Prisma Client and builds Next.js. It intentionally does not migrate a production database. Apply reviewed migrations once as a separate release step before routing traffic to code that requires them.
+Production Vercel builds generate Prisma Client, run the guarded database preparation step, and then build Next.js. This prevents code from deploying ahead of its required columns. The preparation step uses `DATABASE_URL_UNPOOLED`, serializes concurrent releases, and applies committed migrations. It never resets or deletes application data.
+
+For a legacy database created with `db push`, automatic baselining is allowed only when the database exactly matches the committed baseline and has no conflicting invoice numbers or unknown migration history. Drift or missing configuration stops the build with an actionable error. Review and back up existing databases before release; the manual baseline procedure below remains available when automated validation refuses the schema.
+
+Local and preview builds do not automatically migrate databases. Prepare an isolated preview database explicitly before using a preview deployment.
 
 ## 2. Configure variables securely
 
@@ -54,6 +58,8 @@ pnpm exec prisma migrate status
 This applies the baseline followed by the billing-safety migration. Both connection strings must identify the intended database; do not rely on a shell left over from a different environment.
 
 ### Existing database without migration history
+
+The production build gate performs these checks automatically and can baseline an exact match. Use the following manual procedure only when inspecting or resolving a blocked release.
 
 An existing database created with `prisma db push` already contains baseline tables. Running the baseline's `CREATE TABLE` statements again is not an upgrade procedure.
 
