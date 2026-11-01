@@ -8,7 +8,8 @@
 
 - [SDK page](https://invoiceflow-ten-azure.vercel.app/sdk): overview, quickstart, endpoints.
 - [Client library](https://invoiceflow-ten-azure.vercel.app/sdk/invoiceflow-client.mjs): zero-dependency ESM client, Node 18+.
-- [Verifier](https://invoiceflow-ten-azure.vercel.app/sdk/verify-no-key.mjs): runnable auth-boundary proof. Requires no credentials.
+- [Auth verifier](https://invoiceflow-ten-azure.vercel.app/sdk/verify-no-key.mjs): runnable auth-boundary proof. Requires no credentials.
+- [Paid-path verifier](https://invoiceflow-ten-azure.vercel.app/sdk/verify-paid-path.mjs): proves authenticated create -> payable Stripe link. Dry-runs without a key.
 - [README](https://invoiceflow-ten-azure.vercel.app/sdk/README.md): full reference and error table.
 - [REST reference](https://invoiceflow-ten-azure.vercel.app/api-docs)
 
