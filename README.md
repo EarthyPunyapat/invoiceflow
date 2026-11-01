@@ -1,4 +1,32 @@
-# InvoiceFlow
+<div id="top"></div>
+
+<!-- HEADER -->
+<div align="center">
+
+# ⚡ InvoiceFlow
+
+**Professional invoices, Stripe payment links, reminders, and currency-safe reporting. Early access.**
+
+[![Live Demo](https://img.shields.io/badge/Demo-invoiceflow--ten--azure.vercel.app-0080ff?style=flat-square&logo=vercel&logoColor=white)](https://invoiceflow-ten-azure.vercel.app)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-15_(App_Router)-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![Postgres](https://img.shields.io/badge/Database-Neon_Serverless_Postgres-00E599?style=flat-square&logo=postgresql&logoColor=white)](https://neon.tech/)
+[![Prisma](https://img.shields.io/badge/ORM-Prisma-2D3748?style=flat-square&logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![Stripe](https://img.shields.io/badge/Payments-Stripe_Connect-635BFF?style=flat-square&logo=stripe&logoColor=white)](https://stripe.com/)
+[![Resend](https://img.shields.io/badge/Email-Resend-000000?style=flat-square&logo=resend&logoColor=white)](https://resend.com/)
+
+<p align="center">
+  <a href="#implemented-workflows">Features</a> •
+  <a href="#architecture">Architecture</a> •
+  <a href="#local-development">Local Development</a> •
+  <a href="docs/DEPLOYMENT.md">Deployment</a>
+</p>
+
+---
+
+</div>
+
 
 InvoiceFlow is an invoicing app for freelancers. Manage clients, create branded invoices and estimates, share public payment links, collect payments through Stripe Connect, and automate overdue reminders.
 
@@ -133,6 +161,44 @@ Both jobs use `GET` and require `Authorization: Bearer <CRON_SECRET>`:
 - Payment confirmation email currently goes to the invoice owner, not a separate customer receipt workflow.
 - Recurring jobs create drafts; they do not automatically send them or charge stored payment methods.
 - Invoice/subscription accounting, refunds, partial payments and SaaS plan billing require separate product work.
+
+## Architecture
+
+```
+                           ┌─────────────────────────────┐
+                           │      Client / Browser       │
+                           └──────────────┬──────────────┘
+                                          │
+                                          ▼
+                         ┌─────────────────────────────────┐
+                         │   Next.js Middleware (Auth)     │
+                         └──────────────┬──────────────────┘
+                                        │
+        ┌───────────────────────────────┼───────────────────────────────┐
+        ▼                               ▼                               ▼
+ ┌──────────────┐             ┌──────────────────┐            ┌──────────────────┐
+ │ Landing Page │             │ Dashboard (App)  │            │  Public Invoice  │
+ │     `/`      │             │  `/(dashboard)`  │            │   `/i/[token]`   │
+ └──────────────┘             └─────────┬────────┘            └────────┬─────────┘
+                                        │                              │
+                                        ▼                              ▼
+                         ┌─────────────────────────────────────────────────┐
+                         │               API Routes & Crons                │
+                         │   • /api/invoices        • /api/estimates       │
+                         │   • /api/clients         • /api/cron/*          │
+                         │   • /api/i/[token]/pay   • /api/webhooks/stripe │
+                         └──────────────────────┬──────────────────────────┘
+                                                │
+         ┌──────────────────────────────────────┼──────────────────────────────────────┐
+         ▼                                      ▼                                      ▼
+┌──────────────────┐                  ┌──────────────────┐                   ┌──────────────────┐
+│  Neon Postgres   │                  │  Stripe Connect  │                   │      Resend      │
+│  (Prisma Engine) │                  │ (Checkout & Web) │                   │  (React Emails)  │
+└──────────────────┘                  └──────────────────┘                   └──────────────────┘
+```
+
+---
+
 
 ## Structure
 

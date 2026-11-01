@@ -1,0 +1,13 @@
+node_modules/
+.next/
+.git/
+build/
+dist/
+coverage/
+prisma/generated/
+.turbo/
+.vercel/
+.neon/
+*.tsbuildinfo
+*.log
+pnpm-lock.yaml
