@@ -1,0 +1,36 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "io.github.EarthyPunyapat/invoiceflow",
+  "title": "InvoiceFlow",
+  "description": "Create invoices, clients, and payable Stripe Checkout links from an agent. Seven tools over stdio JSON-RPC with no dependencies. No tool sends email, deletes, refunds, or pays \u2014 creation is additive and a human can undo it. Amounts are integer cents and a non-integer is refused rather than rounded.",
+  "version": "1.0.0",
+  "websiteUrl": "https://invoiceflow-ten-azure.vercel.app",
+  "repository": {
+    "url": "https://github.com/EarthyPunyapat/invoiceflow",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "raw",
+      "identifier": "https://invoiceflow-ten-azure.vercel.app/sdk/invoiceflow-mcp.mjs",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "INVOICEFLOW_API_KEY",
+          "description": "InvoiceFlow API key, created in Settings -> API keys. Must begin with ifk_. Without it the server still lists tools, but every call returns an actionable error.",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "INVOICEFLOW_BASE_URL",
+          "description": "Override the API base URL. Defaults to the hosted app.",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}

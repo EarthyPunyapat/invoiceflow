@@ -64,5 +64,6 @@
   },
   "engines": {
     "node": "22.x"
-  }
+  },
+  "mcpName": "io.github.EarthyPunyapat/invoiceflow"
 }

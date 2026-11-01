@@ -30,6 +30,47 @@
 
 InvoiceFlow is an invoicing app for freelancers. Manage clients, create branded invoices and estimates, share public payment links, collect payments through Stripe Connect, and automate overdue reminders.
 
+## MCP server (agents)
+
+InvoiceFlow ships a dependency-free [Model Context Protocol](https://modelcontextprotocol.io)
+server, so an agent in Claude Desktop, Cursor, or any MCP host can create invoices
+and get payable Stripe links without reading a REST document.
+
+```json
+{
+  "mcpServers": {
+    "invoiceflow": {
+      "command": "node",
+      "args": ["/abs/path/invoiceflow-mcp.mjs"],
+      "env": { "INVOICEFLOW_API_KEY": "ifk_..." }
+    }
+  }
+}
+```
+
+Download the server from `https://invoiceflow-ten-azure.vercel.app/sdk/invoiceflow-mcp.mjs`.
+
+**Tools:** `whoami`, `create_client`, `list_clients`, `create_invoice`,
+`list_invoices`, `get_invoice`, `share_invoice`.
+
+**The omissions are the design.** No tool sends email, deletes, refunds, or pays.
+Creating an invoice is additive and a human can undo it; an agent that emails a
+customer on every retry cannot take that back. Amounts are integer cents named
+`unitPrice`, and a non-integer is refused with an explanation rather than rounded,
+because `25.5` silently meaning 25 cents is the defect most likely to reach a real
+customer.
+
+**Verify it yourself, no account required:**
+
+```bash
+curl -sO https://invoiceflow-ten-azure.vercel.app/sdk/invoiceflow-mcp.mjs
+curl -sO https://invoiceflow-ten-azure.vercel.app/sdk/invoiceflow-client.mjs
+curl -sO https://invoiceflow-ten-azure.vercel.app/sdk/test-mcp.mjs
+node test-mcp.mjs     # 14 passed, 0 failed — no key, no network
+```
+
+---
+
 ## Stack
 
 - Node.js 22 and pnpm 10.34.9 (`packageManager` in `package.json`)
