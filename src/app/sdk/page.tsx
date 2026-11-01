@@ -138,6 +138,43 @@ $ INVOICEFLOW_API_KEY=ifk_... node verify-paid-path.mjs
       </div>
 
       <h2 className="mt-14 flex items-center gap-2 text-xl font-semibold text-white">
+        <Terminal className="h-5 w-5 text-zinc-400" /> MCP server
+      </h2>
+      <p className="mt-4 text-zinc-400">
+        An agent should not have to read a REST document to send an invoice. This
+        ships as a Model Context Protocol server with no dependencies — seven tools,
+        added to a host in six lines of config:
+      </p>
+      <div className="mt-5 rounded-xl border border-zinc-800 bg-zinc-950 p-5">
+        <pre className="overflow-x-auto font-mono text-sm leading-relaxed text-zinc-300">
+{`{
+  "mcpServers": {
+    "invoiceflow": {
+      "command": "node",
+      "args": ["/abs/path/invoiceflow-mcp.mjs"],
+      "env": { "INVOICEFLOW_API_KEY": "ifk_..." }
+    }
+  }
+}`}
+        </pre>
+        <p className="mt-3 text-xs text-zinc-500">
+          <a className="text-zinc-300 underline decoration-zinc-700" href="/sdk/invoiceflow-mcp.mjs">/sdk/invoiceflow-mcp.mjs</a>
+          {" · "}
+          <a className="text-zinc-300 underline decoration-zinc-700" href="/sdk/test-mcp.mjs">/sdk/test-mcp.mjs</a>
+          {" — 14 conformance assertions, no key and no network required."}
+        </p>
+      </div>
+      <p className="mt-4 text-zinc-400">
+        The tool set is deliberately narrow. Nothing can send email, delete, refund,
+        or pay: creation is additive and a human can undo it, while an agent that
+        emails a customer on every retry cannot take that back. Amounts are integer
+        cents named <code className="text-zinc-300">unitPrice</code>, and a non-integer
+        is refused with an explanation instead of being rounded, because{" "}
+        <code className="text-zinc-300">25.5</code> silently meaning 25 cents is the
+        defect most likely to reach a paying customer.
+      </p>
+
+      <h2 className="mt-14 flex items-center gap-2 text-xl font-semibold text-white">
         <KeyRound className="h-5 w-5 text-zinc-400" /> How keys work
       </h2>
       <ul className="mt-4 space-y-2 text-zinc-400">

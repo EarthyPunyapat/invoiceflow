@@ -45,3 +45,29 @@ invoice but cannot pay one.
 
     curl -O https://invoiceflow-ten-azure.vercel.app/sdk/verify-no-key.mjs
     node verify-no-key.mjs      # 8 passed, 0 failed
+
+## MCP (Model Context Protocol)
+
+InvoiceFlow ships a dependency-free MCP server. Adding it to a host gives the
+agent seven tools: whoami, create_client, list_clients, create_invoice,
+list_invoices, get_invoice, share_invoice.
+
+  {
+    "mcpServers": {
+      "invoiceflow": {
+        "command": "node",
+        "args": ["/abs/path/invoiceflow-mcp.mjs"],
+        "env": { "INVOICEFLOW_API_KEY": "ifk_..." }
+      }
+    }
+  }
+
+- Server: https://invoiceflow-ten-azure.vercel.app/sdk/invoiceflow-mcp.mjs
+- Conformance tests (no key, no network): https://invoiceflow-ten-azure.vercel.app/sdk/test-mcp.mjs
+
+No tool sends email, deletes, refunds, or pays. Creating an invoice is additive
+and reversible by a human; emailing a customer five times because an agent
+retried is not. Amounts are integer cents named `unitPrice`, and a non-integer
+is refused with an explanation rather than rounded, because `25.5` meaning
+25 cents is the defect most likely to reach a real customer.
+
