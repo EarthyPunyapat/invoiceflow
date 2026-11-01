@@ -98,6 +98,45 @@ ok    constructor refuses empty apiKey
         </p>
       </div>
 
+      <p className="mt-6 text-zinc-400">
+        The verifier above proves everything that must be <em>refused</em>. It cannot
+        prove the thing the product actually claims — that an authenticated caller
+        gets a payable link. That is a separate claim, so it gets a separate script.
+      </p>
+
+      <div className="mt-5 rounded-xl border border-zinc-800 bg-zinc-950 p-5">
+        <pre className="overflow-x-auto font-mono text-sm leading-relaxed text-zinc-300">
+{`$ node verify-paid-path.mjs            # dry run: no key, no writes, no egress
+=== DRY RUN — nothing sent, no account touched ===
+  1. GET  /api/me                    prove the key is live
+  2. POST /api/clients               create a uniquely tagged client
+  3. POST /api/invoices              create invoice (items + dueDate + currency)
+  4.       assert server-derived total == 25000 cents
+  5. POST /api/invoices/:id/share    assert url is https + *.stripe.com
+  6. (skipped) email — pass --send to exercise delivery
+
+$ INVOICEFLOW_API_KEY=ifk_... node verify-paid-path.mjs
+  [PASS] authenticated: GET /api/me responded
+  [PASS] created client
+  [PASS] payload carries no client-supplied totals
+  [PASS] created invoice
+  [PASS] server-derived total matches request
+  [PASS] share returned a url field
+  [PASS] url is https and on stripe.com
+
+7 passed, 0 failed`}
+        </pre>
+        <p className="mt-3 text-xs text-zinc-500">
+          Download:{" "}
+          <a className="text-zinc-300 underline decoration-zinc-700" href="/sdk/verify-paid-path.mjs">
+            /sdk/verify-paid-path.mjs
+          </a>
+          {" "}· runs without a key, refuses a key that cannot be valid
+          before transmitting it, and defaults to DRAFT so no email is sent
+          unless you pass <code className="text-zinc-400">--send</code>.
+        </p>
+      </div>
+
       <h2 className="mt-14 flex items-center gap-2 text-xl font-semibold text-white">
         <KeyRound className="h-5 w-5 text-zinc-400" /> How keys work
       </h2>
