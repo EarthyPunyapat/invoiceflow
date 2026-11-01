@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-02T00:00:00+13:00",
+  "title": "Design System: InvoiceFlow",
+  "extensions": {
+    "motion": [
+      {
+        "name": "ui",
+        "value": "150ms cubic-bezier(.23,1,.32,1)",
+        "purpose": "State feedback only; reduced-motion removes movement."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone",
+        "value": "600px"
+      },
+      {
+        "name": "sidebar",
+        "value": "1024px"
+      }
+    ],
+    "shadows": []
+  },
+  "components": [
+    {
+      "name": "Primary button",
+      "kind": "button",
+      "html": "<button class=\"ds-primary\">New invoice</button>",
+      "css": ".ds-primary{background:var(--color-primary,#245b45);color:white;border:0;border-radius:6px;padding:10px 16px;font:600 14px Manrope,sans-serif;cursor:pointer;transition:background-color 150ms ease,transform 150ms ease}.ds-primary:hover{background:#194431}.ds-primary:focus-visible{outline:2px solid #39725a;outline-offset:3px}.ds-primary:active{transform:scale(.98)}"
+    },
+    {
+      "name": "Text field",
+      "kind": "input",
+      "html": "<label>Client name<input class=\"ds-input\" placeholder=\"Client name\"></label>",
+      "css": ".ds-input{display:block;margin-top:6px;height:40px;border:1px solid #cbd3c9;border-radius:6px;background:#fff;padding:0 12px;color:#1c2923;font:14px Manrope,sans-serif}.ds-input:focus-visible{outline:2px solid #39725a;outline-offset:2px}"
+    },
+    {
+      "name": "Status",
+      "kind": "chip",
+      "html": "<span class=\"ds-status\">Paid</span>",
+      "css": ".ds-status{display:inline-flex;padding:4px 8px;border-radius:4px;background:#e8f1e8;color:#245b45;font:500 12px Manrope,sans-serif}"
+    },
+    {
+      "name": "Workspace navigation",
+      "kind": "nav",
+      "html": "<nav><a class=\"ds-nav\" href=\"#\" aria-current=\"page\">Invoices</a><a class=\"ds-nav\" href=\"#\">Clients</a></nav>",
+      "css": ".ds-nav{display:block;padding:10px 12px;border-radius:6px;color:#59645d;text-decoration:none;font:14px Manrope,sans-serif}.ds-nav[aria-current]{background:#e7ece4;color:#1c2923;font-weight:600}.ds-nav:hover{background:#ebeee7}.ds-nav:focus-visible{outline:2px solid #39725a}"
+    },
+    {
+      "name": "Financial sheet",
+      "kind": "card",
+      "html": "<section class=\"ds-sheet\"><h3>Recent invoices</h3><p>Your latest work.</p></section>",
+      "css": ".ds-sheet{border:1px solid #dce1d9;border-radius:10px;padding:24px;background:white;color:#1c2923;font:14px Manrope,sans-serif}.ds-sheet h3{font-size:18px;font-weight:600}.ds-sheet p{color:#59645d}"
+    }
+  ],
+  "narrative": {
+    "northStar": "A calm working ledger",
+    "overview": "Financial precision and legible daily workflows, with a working invoice as the public demonstration.",
+    "keyCharacteristics": [
+      "Warm white",
+      "Dark ink",
+      "Restrained green",
+      "Clear tables",
+      "Subtle feedback"
+    ]
+  }
+}

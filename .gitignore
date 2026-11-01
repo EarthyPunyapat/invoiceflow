@@ -45,3 +45,11 @@ prisma/generated/
 # browser test artifacts
 playwright-report/
 test-results/
+
+# Design tool runtime artifacts
+.impeccable/review/
+.impeccable/questions/
+.impeccable/mocks/
+.taste-skill/inspect/
+.taste-skill/before/
+.taste-skill/after/

@@ -1,3 +1,4 @@
+import { Badge, statusVariant } from "@/components/ui/badge";
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -93,7 +94,7 @@ export default async function InvoiceDetailPage({ params: paramsPromise }: Invoi
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+      <div className="flex flex-col xl:flex-row xl:items-center gap-4">
         <div className="flex items-center gap-4 flex-1">
           <Link
             href="/invoices"
@@ -128,7 +129,7 @@ export default async function InvoiceDetailPage({ params: paramsPromise }: Invoi
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
         <div className="grid grid-cols-2 gap-6">
           <div>
-            <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+            <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400  mb-2">
               From
             </h3>
             <div className="flex items-center gap-2.5">
@@ -146,7 +147,7 @@ export default async function InvoiceDetailPage({ params: paramsPromise }: Invoi
             </div>
           </div>
           <div>
-            <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+            <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400  mb-2">
               Bill To
             </h3>
             <p className="text-sm font-medium text-gray-900 dark:text-white">
@@ -157,12 +158,12 @@ export default async function InvoiceDetailPage({ params: paramsPromise }: Invoi
                 {invoice.client.company}
               </p>
             )}
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="break-all text-sm text-gray-500 dark:text-gray-400">
               {invoice.client.email}
             </p>
           </div>
           <div>
-            <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+            <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400  mb-2">
               Invoice Number
             </h3>
             <p className="text-sm text-gray-900 dark:text-white">
@@ -170,7 +171,7 @@ export default async function InvoiceDetailPage({ params: paramsPromise }: Invoi
             </p>
           </div>
           <div>
-            <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+            <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400  mb-2">
               Due Date
             </h3>
             <p className="text-sm text-gray-900 dark:text-white">
@@ -186,16 +187,16 @@ export default async function InvoiceDetailPage({ params: paramsPromise }: Invoi
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 ">
                   Description
                 </th>
-                <th className="text-center px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-20">
+                <th className="text-center px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400  w-20">
                   Qty
                 </th>
-                <th className="text-right px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-28">
+                <th className="text-right px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400  w-28">
                   Price
                 </th>
-                <th className="text-right px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-28">
+                <th className="text-right px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400  w-28">
                   Total
                 </th>
               </tr>
@@ -254,7 +255,7 @@ export default async function InvoiceDetailPage({ params: paramsPromise }: Invoi
       {/* Notes */}
       {invoice.notes && (
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
-          <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+          <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400  mb-2">
             Notes
           </h3>
           <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
@@ -267,21 +268,5 @@ export default async function InvoiceDetailPage({ params: paramsPromise }: Invoi
 }
 
 function InvoiceStatusBadge({ status }: { status: string }) {
-  const variants: Record<string, string> = {
-    DRAFT: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-    SENT: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-    PAID: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    OVERDUE: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-    CANCELLED: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-  };
-
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-        variants[status] || variants.DRAFT
-      }`}
-    >
-      {status}
-    </span>
-  );
+  return <Badge variant={statusVariant(status)}>{status.charAt(0) + status.slice(1).toLowerCase()}</Badge>;
 }

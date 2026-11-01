@@ -8,7 +8,7 @@ export interface BarChartPoint {
 /**
  * Dependency-free server-rendered SVG bar chart.
  * Y-axis auto-scales; values are exposed via <title> tooltips and
- * month labels render under each bar. Renders a friendly empty state
+ * HTML month labels stay readable at narrow widths. Renders a friendly empty state
  * when every value is zero.
  */
 export function BarChart({
@@ -22,7 +22,7 @@ export function BarChart({
 }) {
   const W = 600;
   const H = height;
-  const padBottom = 24; // room for x labels
+  const padBottom = 4;
   const plotH = H - padBottom;
 
   if (data.length === 0 || data.every((d) => d.value === 0)) {
@@ -46,42 +46,47 @@ export function BarChart({
   const barWidth = Math.min(slot * 0.6, 64);
 
   return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      className="w-full"
-      style={{ height }}
-      role="img"
-      aria-label="Revenue by month bar chart"
-    >
-      {data.map((point, i) => {
-        // Scale against the plot height so the tallest bar exactly fills it.
-        const barH = Math.max(2, (point.value / max) * plotH);
-        const x = i * slot + (slot - barWidth) / 2;
-        return (
-          <g key={point.label}>
-            <title>{`${point.label}: ${formatCurrency(point.value, currency)}`}</title>
-            <rect
-              x={x}
-              y={plotH - barH}
-              width={barWidth}
-              height={barH}
-              rx={6}
-              className="fill-primary-600 dark:fill-primary-400"
-            >
+    <div>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio="none"
+        className="w-full"
+        style={{ height }}
+        role="img"
+        aria-label="Revenue by month bar chart"
+      >
+        {data.map((point, i) => {
+          // Scale against the plot height so the tallest bar exactly fills it.
+          const barH = Math.max(2, (point.value / max) * plotH);
+          const x = i * slot + (slot - barWidth) / 2;
+          return (
+            <g key={point.label}>
               <title>{`${point.label}: ${formatCurrency(point.value, currency)}`}</title>
-            </rect>
-            <text
-              x={i * slot + slot / 2}
-              y={H - 8}
-              textAnchor="middle"
-              fontSize={10}
-              className="fill-gray-500 dark:fill-gray-400"
-            >
-              {point.label}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
+              <rect
+                x={x}
+                y={plotH - barH}
+                width={barWidth}
+                height={barH}
+                rx={6}
+                className="fill-primary-600 dark:fill-primary-400"
+              >
+                <title>{`${point.label}: ${formatCurrency(point.value, currency)}`}</title>
+              </rect>
+            </g>
+          );
+        })}
+      </svg>
+      <div
+        className="mt-3 grid gap-1 text-center text-[13px] leading-snug text-gray-600"
+        style={{
+          gridTemplateColumns: `repeat(${data.length}, minmax(0, 1fr))`,
+        }}
+        aria-hidden="true"
+      >
+        {data.map((point) => (
+          <span key={point.label}>{point.label}</span>
+        ))}
+      </div>
+    </div>
   );
 }

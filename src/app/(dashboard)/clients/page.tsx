@@ -180,7 +180,7 @@ export default async function ClientsPage({ searchParams: searchParamsPromise }:
             <Link
               key={client.id}
               href={`/clients/${client.id}`}
-              className="group bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-sm transition-all"
+              className="group bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-sm transition-colors"
             >
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-lg bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center flex-shrink-0">

@@ -43,7 +43,7 @@ export function AgingReport({ buckets, currency = "USD" }: { buckets: AgingBucke
     <div className="glass-panel overflow-hidden">
       <div className="px-6 py-5">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-          Outstanding Invoices
+          Outstanding invoices
         </h2>
         <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
           {formatCurrency(totalOutstanding, currency)} outstanding by age
@@ -53,7 +53,7 @@ export function AgingReport({ buckets, currency = "USD" }: { buckets: AgingBucke
       <div className="grid grid-cols-2 gap-px bg-gray-100 dark:bg-gray-800 lg:grid-cols-4">
         {cells.map((cell) => (
           <div key={cell.label} className="bg-white p-5 dark:bg-gray-900">
-            <p className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${cell.bg} ${cell.color}`}>
+            <p className="text-xs font-medium text-gray-600">
               {cell.label}
             </p>
             <p className="mt-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white tabular-nums">

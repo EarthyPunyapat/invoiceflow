@@ -3,11 +3,11 @@
 <!-- HEADER -->
 <div align="center">
 
-# ⚡ InvoiceFlow
+# InvoiceFlow
 
 **Professional invoices, Stripe payment links, reminders, and currency-safe reporting. Early access.**
 
-[![Live Demo](https://img.shields.io/badge/Demo-invoiceflow--ten--azure.vercel.app-0080ff?style=flat-square&logo=vercel&logoColor=white)](https://invoiceflow-ten-azure.vercel.app)
+[![Live Demo](https://img.shields.io/badge/Demo-invoiceflow--ten--azure.vercel.app-245b45?style=flat-square&logo=vercel&logoColor=white)](https://invoiceflow-ten-azure.vercel.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15_(App_Router)-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org/)
@@ -54,6 +54,12 @@ InvoiceFlow is an invoicing app for freelancers. Manage clients, create branded 
 | Business profile | Name, address, logo, accent color and invoice numbering prefix |
 
 The app offers early access. Subscription purchases and plan enforcement are not implemented. Invoice payments are separate from billing users for access to InvoiceFlow.
+
+## Interface and design guidance
+
+The public site, Google sign-in and workspace use a warm-white, dark-ink and evergreen visual system, with an interactive example invoice, compact tables and keyboard-friendly mobile navigation. Reports retain separate totals for each currency. Client creation is available inside invoice and estimate drafts.
+
+Read [PRODUCT.md](PRODUCT.md) and [DESIGN.md](DESIGN.md) before changing the interface. The requested Emil Kowalski, Impeccable, Taste and frontend-design skills are installed locally under [.agents/skills](.agents/skills/SOURCES.md), with upstream revisions and licenses. [The design review](docs/DESIGN_REVIEW.md) records rendered checks and deliberate tradeoffs.
 
 ## Local development
 
@@ -221,5 +227,8 @@ Run `pnpm run test:browser` after `pnpm run build`, with `DATABASE_URL` and
 database. Install Chromium using `pnpm exec playwright install chromium` when a
 system Chromium is unavailable. Browser tests start a production server on
 port 3100, use isolated test accounts and a locally signed session, and exercise
-actual pages, API requests and database writes. They do not complete Google OAuth
+actual pages, API requests and database writes. The design checks cover 13 routes
+at desktop (1440px), tablet (768px) and phone (390px) widths, including public
+invoices, invoice/estimate details, keyboard interactions, reduced motion and
+mobile sign-out. They do not complete Google OAuth
 or send real emails/payments.

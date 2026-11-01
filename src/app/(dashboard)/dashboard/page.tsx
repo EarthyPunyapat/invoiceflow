@@ -1,5 +1,8 @@
 import { ReportCurrencyFilter } from "@/components/report-currency-filter";
-import { reportCurrencyOptions, selectReportCurrency } from "@/lib/report-currency";
+import {
+  reportCurrencyOptions,
+  selectReportCurrency,
+} from "@/lib/report-currency";
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -7,319 +10,185 @@ import { formatCurrency } from "@/lib/utils";
 import { bucketOutstanding } from "@/lib/aging";
 import { AgingReport } from "@/components/aging-report";
 import Link from "next/link";
-import {
-  FileText,
-  Users,
-  DollarSign,
-  Clock,
-  ArrowRight,
-  Plus,
-  TrendingUp,
-  AlertCircle,
-} from "lucide-react";
+import { Plus } from "lucide-react";
+import { Badge, statusVariant } from "@/components/ui/badge";
 
 export const metadata: Metadata = {
   title: "Dashboard",
 };
 
-export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ currency?: string | string[] }> }) {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ currency?: string | string[] }>;
+}) {
   const session = await auth();
   if (!session?.user?.id) return null;
   const params = await searchParams;
   const available = await prisma.invoice.findMany({
-    where: { userId: session.user.id }, distinct: ["currency"], select: { currency: true },
+    where: { userId: session.user.id },
+    distinct: ["currency"],
+    select: { currency: true },
   });
-  const currencies = reportCurrencyOptions(available.map(invoice => invoice.currency));
+  const currencies = reportCurrencyOptions(
+    available.map((invoice) => invoice.currency),
+  );
   const currency = selectReportCurrency(params.currency, currencies);
 
-  const [invoiceStats, clientCount, recentInvoices, outstandingInvoices] = await Promise.all([
-    prisma.invoice.groupBy({
-      by: ["status"],
-      where: { userId: session.user.id, currency },
-      _sum: { total: true },
-      _count: true,
-    }),
-    prisma.client.count({ where: { userId: session.user.id } }),
-    prisma.invoice.findMany({
-      where: { userId: session.user.id },
-      include: { client: { select: { name: true, company: true } } },
-      orderBy: { createdAt: "desc" },
-      take: 5,
-    }),
-    prisma.invoice.findMany({
-      where: {
-        userId: session.user.id,
-        currency,
-        status: { in: ["SENT", "OVERDUE"] },
-      },
-      select: { total: true, dueDate: true, status: true },
-    }),
-  ]);
+  const [invoiceStats, clientCount, recentInvoices, outstandingInvoices] =
+    await Promise.all([
+      prisma.invoice.groupBy({
+        by: ["status"],
+        where: { userId: session.user.id, currency },
+        _sum: { total: true },
+        _count: true,
+      }),
+      prisma.client.count({ where: { userId: session.user.id } }),
+      prisma.invoice.findMany({
+        where: { userId: session.user.id },
+        include: { client: { select: { name: true, company: true } } },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      }),
+      prisma.invoice.findMany({
+        where: {
+          userId: session.user.id,
+          currency,
+          status: { in: ["SENT", "OVERDUE"] },
+        },
+        select: { total: true, dueDate: true, status: true },
+      }),
+    ]);
 
-  const totalInvoiced = invoiceStats.filter(stat => stat.status !== "CANCELLED").reduce(
-    (sum, s) => sum + (s._sum.total || 0),
-    0
-  );
   const paidAmount =
     invoiceStats.find((s) => s.status === "PAID")?._sum.total || 0;
-  const overdueAmount =
-    invoiceStats.find((s) => s.status === "OVERDUE")?._sum.total || 0;
-  const pendingAmount =
-    invoiceStats
-      .filter((s) => s.status === "SENT" || s.status === "DRAFT")
-      .reduce((sum, s) => sum + (s._sum.total || 0), 0);
-
+  const awaitingAmount = outstandingInvoices.reduce(
+    (sum, invoice) => sum + invoice.total,
+    0,
+  );
+  const draftAmount =
+    invoiceStats.find((stat) => stat.status === "DRAFT")?._sum.total || 0;
+  const overdueCount = outstandingInvoices.filter(
+    (invoice) => invoice.dueDate < new Date(),
+  ).length;
   const stats = [
     {
-      label: "Total Invoiced",
-      value: formatCurrency(totalInvoiced, currency),
-      icon: DollarSign,
-      color: "text-primary-600 dark:text-primary-400",
-      bg: "bg-primary-50 dark:bg-primary-900/20",
-      ring: "ring-primary-500/10",
+      label: "Awaiting payment",
+      value: formatCurrency(awaitingAmount, currency),
     },
-    {
-      label: "Paid",
-      value: formatCurrency(paidAmount, currency),
-      icon: TrendingUp,
-      color: "text-emerald-600 dark:text-emerald-400",
-      bg: "bg-emerald-50 dark:bg-emerald-900/20",
-      ring: "ring-emerald-500/10",
-    },
-    {
-      label: "Pending",
-      value: formatCurrency(pendingAmount, currency),
-      icon: Clock,
-      color: "text-amber-600 dark:text-amber-400",
-      bg: "bg-amber-50 dark:bg-amber-900/20",
-      ring: "ring-amber-500/10",
-    },
-    {
-      label: "Clients",
-      value: clientCount.toString(),
-      icon: Users,
-      color: "text-sky-600 dark:text-sky-400",
-      bg: "bg-sky-50 dark:bg-sky-900/20",
-      ring: "ring-sky-500/10",
-    },
+    { label: "Paid", value: formatCurrency(paidAmount, currency) },
+    { label: "In drafts", value: formatCurrency(draftAmount, currency) },
+    { label: "Clients", value: clientCount.toString() },
   ];
 
-  const statusStyles: Record<string, string> = {
-    PAID: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400",
-    SENT: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400",
-    DRAFT: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
-    OVERDUE: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400",
-  };
-
   return (
-    <div className="space-y-8">
-      {/* ─── Animation & hover styles ─── */}
-      <style>{`
-        :root {
-          --ease-out-custom: cubic-bezier(0.23, 1, 0.32, 1);
-          --duration-fast: 150ms;
-          --duration-ui: 200ms;
-        }
-
-        /* Stats card elevate on hover — gated to pointer:fine */
-        @media (hover: hover) and (pointer: fine) {
-          .stat-card {
-            transition: transform var(--duration-ui) var(--ease-out-custom),
-                        box-shadow var(--duration-ui) var(--ease-out-custom);
-          }
-          .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04);
-          }
-
-          .table-row {
-            transition: background-color var(--duration-fast) var(--ease-out-custom);
-          }
-          .table-row:hover {
-            background-color: var(--color-bg-alt, #f9fafb);
-          }
-
-          .dark .table-row:hover {
-            background-color: rgba(31,41,55,0.5);
-          }
-
-          .new-invoice-btn {
-            transition: background-color var(--duration-fast) var(--ease-out-custom),
-                        box-shadow var(--duration-fast) var(--ease-out-custom),
-                        transform var(--duration-fast) var(--ease-out-custom);
-          }
-
-          .new-invoice-btn:hover {
-            box-shadow: 0 4px 12px rgba(79,70,229,0.25);
-            transform: translateY(-1px);
-          }
-        }
-
-        /* Reduced motion: remove all movement */
-        @media (prefers-reduced-motion: reduce) {
-          *,
-          *::before,
-          *::after {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important;
-          }
-
-          .stat-card:hover {
-            transform: none !important;
-          }
-        }
-      `}</style>
-
-      {/* ─── Page Header ─── */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-7">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-            Dashboard
-          </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Welcome back, {session.user.name || "User"}
+          <h1 className="text-[28px] font-semibold">Overview</h1>
+          <p className="mt-2 text-sm text-gray-600">
+            {overdueCount
+              ? `${overdueCount} invoice${overdueCount === 1 ? " needs" : "s need"} a follow-up.`
+              : "A clear view of your invoices and what comes next."}
           </p>
         </div>
         <Link
           href="/invoices/new"
-          className="new-invoice-btn inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm"
+          className="app-button h-10 bg-primary-600 px-4 text-sm text-white hover:bg-primary-700"
         >
-          <Plus className="h-4 w-4" />
-          New Invoice
+          <Plus size={16} />
+          New invoice
         </Link>
       </div>
-
-      <ReportCurrencyFilter currency={currency} currencies={currencies} />
-      <p className="text-xs text-gray-500 dark:text-gray-400">Monetary totals are in {currency}. Recent invoices keep their original currency; client count includes all clients.</p>
-
-      {/* ─── Stats Grid — Glass panel cards ─── */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <p className="text-sm text-gray-600">Your business, in {currency}</p>
+        <ReportCurrencyFilter currency={currency} currencies={currencies} />
+      </div>
+      <div className="summary-strip">
         {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className={`stat-card glass-panel relative overflow-hidden p-5 ${stat.ring}`}
-          >
-            {/* Subtle background glow */}
-            <div className={`absolute -right-4 -top-4 h-20 w-20 rounded-full opacity-20 ${stat.bg}`} />
-            <div className="relative flex items-center gap-4">
-              <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${stat.bg}`}>
-                <stat.icon className={`h-5 w-5 ${stat.color}`} />
-              </div>
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  {stat.label}
-                </p>
-                <p className="mt-0.5 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-                  {stat.value}
-                </p>
-              </div>
-            </div>
+          <div key={stat.label}>
+            <p>{stat.label}</p>
+            <strong>{stat.value}</strong>
           </div>
         ))}
       </div>
-
-      {/* ─── Aging Report — Outstanding by age bucket ─── */}
-      <AgingReport buckets={bucketOutstanding(outstandingInvoices, new Date())} currency={currency} />
-
-      {/* ─── Recent Invoices — Glass panel table ─── */}
-      <div className="glass-panel overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-5">
+      <section className="pt-2">
+        <div className="mb-4 flex items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Recent Invoices
-            </h2>
-            <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-              Your latest {recentInvoices.length} invoice{recentInvoices.length !== 1 ? "s" : ""}
+            <h2 className="text-lg font-semibold">Recent invoices</h2>
+            <p className="mt-1 text-sm text-gray-500">
+              The latest work on your books.
             </p>
           </div>
           <Link
             href="/invoices"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 link-underline"
+            className="text-sm font-medium text-primary-600 hover:underline"
           >
-            View all
-            <ArrowRight className="h-4 w-4" />
+            View all invoices
           </Link>
         </div>
-
-        <div className="px-6 pb-5">
-          {recentInvoices.length === 0 ? (
-            <div className="flex flex-col items-center py-12 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-800">
-                <FileText className="h-6 w-6 text-gray-400 dark:text-gray-500" />
-              </div>
-              <h3 className="mt-4 text-sm font-semibold text-gray-900 dark:text-white">
-                No invoices yet
-              </h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Create your first invoice to get started.
-              </p>
-              <Link
-                href="/invoices/new"
-                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors"
-              >
-                <Plus className="h-4 w-4" />
-                Create your first invoice
-              </Link>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-100 dark:divide-gray-800">
-              {/* Table header */}
-              <div className="flex items-center gap-4 px-2 pb-3">
-                <span className="flex-1 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                  Invoice
-                </span>
-                <span className="w-28 text-right text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                  Amount
-                </span>
-                <span className="w-24 text-right text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                  Status
-                </span>
-              </div>
-
-              {recentInvoices.map((inv) => (
-                <Link
-                  key={inv.id}
-                  href={`/invoices/${inv.id}`}
-                  className="table-row flex items-center gap-4 py-3.5 -mx-2 px-2 rounded-lg focus-visible:outline-2 focus-visible:outline-primary-500 focus-visible:outline-offset-2"
-                >
-                  <div className="flex flex-1 items-center gap-3 min-w-0">
-                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800">
-                      <FileText className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                        {inv.invoiceNumber}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        {inv.client.name}
-                        {inv.client.company && ` · ${inv.client.company}`}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="w-28 text-right flex-shrink-0">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums">
-                      {formatCurrency(inv.total, inv.currency)}
-                    </p>
-                  </div>
-                  <div className="w-24 text-right flex-shrink-0">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                        statusStyles[inv.status] || "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
-                      }`}
-                    >
-                      {inv.status === "OVERDUE" && (
-                        <AlertCircle className="mr-1 h-3 w-3" />
-                      )}
-                      {inv.status.charAt(0) + inv.status.slice(1).toLowerCase()}
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+        {recentInvoices.length === 0 ? (
+          <div className="page-empty rounded-xl bg-gray-50">
+            <h3>Your first invoice starts here.</h3>
+            <p>
+              Add a client and the work you did. We’ll keep the details
+              together.
+            </p>
+            <Link
+              href="/invoices/new"
+              className="app-button mt-5 h-10 bg-primary-600 px-4 text-sm text-white"
+            >
+              Create your first invoice
+            </Link>
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-gray-200">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-left text-gray-500">
+                  <th className="px-5 py-3">Invoice</th>
+                  <th className="px-5 py-3">Client</th>
+                  <th className="px-5 py-3">Status</th>
+                  <th className="px-5 py-3 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentInvoices.map((invoice) => (
+                  <tr
+                    key={invoice.id}
+                    className="border-b border-gray-100 last:border-0 hover:bg-gray-50"
+                  >
+                    <td className="whitespace-nowrap px-5 py-4">
+                      <Link
+                        href={`/invoices/${invoice.id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {invoice.invoiceNumber}
+                      </Link>
+                    </td>
+                    <td className="min-w-[150px] px-5 py-4">
+                      {invoice.client.name}
+                    </td>
+                    <td className="px-5 py-4">
+                      <Badge variant={statusVariant(invoice.status)}>
+                        {invoice.status.charAt(0) +
+                          invoice.status.slice(1).toLowerCase()}
+                      </Badge>
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-4 text-right font-medium tabular-nums">
+                      {formatCurrency(invoice.total, invoice.currency)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+      <AgingReport
+        buckets={bucketOutstanding(outstandingInvoices, new Date())}
+        currency={currency}
+      />
     </div>
   );
 }

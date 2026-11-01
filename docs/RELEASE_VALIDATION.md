@@ -73,3 +73,29 @@ creation and selection, first-client creation during invoice/estimate entry,
 saving the resulting invoice/estimate, failed list/save retries, expired sessions,
 validation/cancel and mobile entry. These browser checks now run in GitHub CI.
 External production verification remains separate from these local results.
+
+
+## Visual rework — 2 November 2026
+
+The landing, login, application shell and shared controls now follow the approved
+warm-white/ink/evergreen design system. Overview and Reports use aligned summary
+figures; document statuses, branding, navigation and responsive spacing are
+consistent across the application. Settings no longer exposes a dead Pro upgrade.
+The prior inline client-creation fix remains covered by real browser workflows.
+
+| Check | Result |
+| --- | --- |
+| Node / pnpm | 22.23.4 / 10.34.9 |
+| Frozen lockfile install | Passed using this environment's existing pnpm store |
+| ESLint / TypeScript | Passed |
+| Unit tests | 156 passed across 17 files |
+| PostgreSQL integration tests | 53 passed across 5 files |
+| Production build | Passed |
+| Chromium browser suite | 12 passed, including 13 routes at 3 viewport widths |
+| Production dependency audit | No high/critical findings; one low advisory |
+
+See [DESIGN_REVIEW.md](DESIGN_REVIEW.md) for screenshots, behavior checks and
+explicit design-meter tradeoffs. These results are local; Vercel build status,
+real OAuth, live provider delivery and production payment behavior are not
+established by this review. Releases continue through GitHub main and the linked
+Vercel integration, without deploying from the cloud sandbox.

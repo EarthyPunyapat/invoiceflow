@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Manrope } from "next/font/google";
 import { BRAND } from "@/lib/brand";
 import "./globals.css";
 
-const inter = Inter({
+const bodyFont = Manrope({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-body",
 });
 
 export const metadata: Metadata = {
@@ -57,7 +57,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className={`${bodyFont.variable} font-sans antialiased`}>
         {children}
       </body>
     </html>

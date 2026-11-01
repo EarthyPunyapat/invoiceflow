@@ -167,22 +167,22 @@ export default async function EstimatesPage({ searchParams: searchParamsPromise 
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-800">
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 ">
                   Estimate
                 </th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 ">
                   Client
                 </th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 ">
                   Status
                 </th>
-                <th className="text-right px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="text-right px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 ">
                   Amount
                 </th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell">
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400  hidden sm:table-cell">
                   Issued
                 </th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400  hidden md:table-cell">
                   Expires
                 </th>
               </tr>

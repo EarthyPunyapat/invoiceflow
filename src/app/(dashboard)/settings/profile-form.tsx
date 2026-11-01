@@ -24,7 +24,7 @@ export interface BusinessProfile {
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
 const URL_RE = /^https?:\/\/\S+$/;
 const PREFIX_RE = /^[A-Z0-9]*$/;
-const FALLBACK_ACCENT = "#2563eb";
+const FALLBACK_ACCENT = "#245b45";
 // Mirrors the looser accent gating on public share pages (/i/[token])
 // so the live preview shows exactly what clients will see. Save-time
 // validation above stays strict ({6}) per the server zod contract.
@@ -273,7 +273,7 @@ export function ProfileForm({ profile }: { profile: BusinessProfile }) {
               id="accentColor"
               value={form.accentColor}
               onChange={set("accentColor")}
-              placeholder="#2563eb"
+              placeholder="#245b45"
               maxLength={7}
               className={`font-mono ${
                 !accentValid ? "border-red-400 focus-visible:ring-red-500" : ""
@@ -313,7 +313,7 @@ export function ProfileForm({ profile }: { profile: BusinessProfile }) {
           public share page (/i/[token]). Re-renders instantly from the
           same form state as the fields above. */}
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
-        <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">
+        <p className="text-xs font-medium text-gray-400 dark:text-gray-500  mb-4">
           Live preview
         </p>
 
@@ -347,7 +347,7 @@ export function ProfileForm({ profile }: { profile: BusinessProfile }) {
           </div>
           <div className="text-right shrink-0">
             <p
-              className="text-xs font-medium uppercase tracking-wider"
+              className="text-xs font-medium "
               style={{ color: previewHex }}
             >
               Invoice

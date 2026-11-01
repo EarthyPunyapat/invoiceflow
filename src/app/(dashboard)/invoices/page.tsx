@@ -144,25 +144,25 @@ export default async function InvoicesPage({ searchParams: searchParamsPromise }
       {/* Table */}
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[560px]">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-800">
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 ">
                   Invoice
                 </th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 ">
                   Client
                 </th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 ">
                   Status
                 </th>
-                <th className="text-right px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="text-right px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 ">
                   Amount
                 </th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell">
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400  hidden sm:table-cell">
                   Date
                 </th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400  hidden md:table-cell">
                   Due Date
                 </th>
               </tr>
@@ -182,7 +182,7 @@ export default async function InvoicesPage({ searchParams: searchParamsPromise }
                   <tr key={inv.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                     <td className="px-5 py-4">
                       <Link href={`/invoices/${inv.id}`} className="block">
-                        <p className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline">
+                        <p className="whitespace-nowrap text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline">
                           {inv.invoiceNumber}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 sm:hidden">
@@ -206,7 +206,7 @@ export default async function InvoicesPage({ searchParams: searchParamsPromise }
                       </Badge>
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      <p className="whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                         {formatCurrency(inv.total, inv.currency)}
                       </p>
                     </td>

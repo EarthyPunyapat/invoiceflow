@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import Link from "next/link";
-import { Settings, User, CreditCard, Zap, ExternalLink } from "lucide-react";
+import { CreditCard } from "lucide-react";
 import { StripeConnectButton } from "./stripe-connect-button";
 import { ProfileForm } from "./profile-form";
 
@@ -36,24 +35,8 @@ export default async function SettingsPage() {
     }),
   ]);
 
-  const stripeConnected = stripeAccount?.stripeConnectOnboardingComplete ?? false;
-
-  const settingsSections = [
-    {
-      title: "Notifications",
-      description: "Configure email notifications and reminders",
-      icon: Zap,
-      href: "#",
-      disabled: true,
-    },
-    {
-      title: "Security",
-      description: "Manage your password and security settings",
-      icon: Settings,
-      href: "#",
-      disabled: true,
-    },
-  ];
+  const stripeConnected =
+    stripeAccount?.stripeConnectOnboardingComplete ?? false;
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -68,7 +51,7 @@ export default async function SettingsPage() {
 
       {/* User info card */}
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-        <h2 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
+        <h2 className="text-xs font-medium text-gray-500 dark:text-gray-400  mb-4">
           Profile
         </h2>
         <div className="flex items-center gap-4">
@@ -82,7 +65,9 @@ export default async function SettingsPage() {
           ) : (
             <div className="w-14 h-14 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
               <span className="text-xl font-bold text-primary-700 dark:text-primary-300">
-                {session?.user?.name?.charAt(0) || session?.user?.email?.charAt(0) || "?"}
+                {session?.user?.name?.charAt(0) ||
+                  session?.user?.email?.charAt(0) ||
+                  "?"}
               </span>
             </div>
           )}
@@ -90,7 +75,7 @@ export default async function SettingsPage() {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               {session?.user?.name || "User"}
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="break-all text-sm text-gray-500 dark:text-gray-400">
               {session?.user?.email}
             </p>
           </div>
@@ -99,7 +84,7 @@ export default async function SettingsPage() {
 
       {/* Business profile (branding shown on invoices & emails) */}
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-        <h2 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+        <h2 className="text-xs font-medium text-gray-500 dark:text-gray-400  mb-1">
           Business profile
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
@@ -126,8 +111,8 @@ export default async function SettingsPage() {
       {/* Stripe Connect Section */}
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
         <div className="flex items-start gap-4">
-          <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-900/20">
-            <CreditCard className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+          <div className="p-2 rounded-lg bg-primary-50">
+            <CreditCard className="w-5 h-5 text-primary-600" />
           </div>
           <div className="flex-1">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -154,67 +139,18 @@ export default async function SettingsPage() {
         </div>
       </div>
 
-      {/* Billing Section */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-        <div className="flex items-start gap-4">
-          <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20">
-            <CreditCard className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div className="flex-1">
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
-              Plan & Billing
-            </h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              You are currently on the Free plan.
-            </p>
-            <div className="mt-3 flex items-center gap-3">
-              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                Free Plan
-              </span>
-              <Link
-                href="#"
-                className="inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
-              >
-                Upgrade to Pro
-                <ExternalLink className="w-3 h-3" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Other settings sections */}
-      <div className="space-y-2">
-        {settingsSections.map((section) => (
-          <div
-            key={section.title}
-            className={`bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 ${
-              section.disabled
-                ? "opacity-60 cursor-not-allowed"
-                : "hover:border-primary-300 dark:hover:border-primary-700 cursor-pointer"
-            } transition-all`}
-          >
-            <div className="flex items-center gap-4">
-              <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
-                <section.icon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {section.title}
-                </h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  {section.description}
-                </p>
-              </div>
-              {section.disabled && (
-                <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">
-                  Coming soon
-                </span>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+      <section className="rounded-xl bg-gray-50 p-6">
+        <h2 className="text-sm font-semibold">Early access</h2>
+        <p className="mt-2 text-sm leading-relaxed text-gray-600">
+          InvoiceFlow is free to use during early access. Subscription billing
+          is not available yet. Payments you collect through Stripe are separate
+          from your access to InvoiceFlow.
+        </p>
+        <p className="mt-3 text-sm leading-relaxed text-gray-600">
+          Your Google account manages your sign-in credentials and account
+          security.
+        </p>
+      </section>
     </div>
   );
 }

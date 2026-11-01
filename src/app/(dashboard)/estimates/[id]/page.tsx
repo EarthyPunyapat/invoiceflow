@@ -64,7 +64,7 @@ export default async function EstimateDetailPage({
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
         <div className="flex items-center gap-3">
           <Link href="/estimates">
             <Button variant="ghost" size="sm">
@@ -88,7 +88,7 @@ export default async function EstimateDetailPage({
       {/* Meta */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
-          <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+          <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 ">
             Client
           </h3>
           <p className="text-sm text-gray-900 dark:text-white mt-1">
@@ -101,7 +101,7 @@ export default async function EstimateDetailPage({
           )}
         </div>
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
-          <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+          <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 ">
             Issued
           </h3>
           <p className="text-sm text-gray-900 dark:text-white mt-1">
@@ -109,7 +109,7 @@ export default async function EstimateDetailPage({
           </p>
         </div>
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
-          <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+          <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 ">
             Expires
           </h3>
           <p className="text-sm text-gray-900 dark:text-white mt-1">
@@ -124,16 +124,16 @@ export default async function EstimateDetailPage({
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 ">
                   Description
                 </th>
-                <th className="text-center px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="text-center px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 ">
                   Qty
                 </th>
-                <th className="text-right px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="text-right px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 ">
                   Unit price
                 </th>
-                <th className="text-right px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="text-right px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 ">
                   Total
                 </th>
               </tr>
@@ -192,7 +192,7 @@ export default async function EstimateDetailPage({
       {/* Notes */}
       {estimate.notes && (
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-          <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+          <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400  mb-2">
             Notes
           </h3>
           <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">

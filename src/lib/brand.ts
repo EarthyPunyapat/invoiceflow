@@ -3,22 +3,22 @@ export const BRAND = {
   tagline: "Create invoices. Share payment links. Track what is owed.",
   description:
     "Create and share professional invoices, accept payments with Stripe Connect, and track clients, estimates, and overdue balances.",
-  url: "https://invoiceflow.app",
+  url: "https://invoiceflow-ten-azure.vercel.app",
   colors: {
-    primary: "#4F46E5", // indigo-600
-    primaryLight: "#6366F1", // indigo-500
-    primaryDark: "#4338CA", // indigo-700
-    accent: "#0D9488", // teal-600
-    accentLight: "#14B8A6", // teal-500
-    accentDark: "#0F766E", // teal-700
-    success: "#059669", // emerald-600
-    warning: "#D97706", // amber-600
-    danger: "#DC2626", // red-600
+    primary: "#245B45",
+    primaryLight: "#39725A",
+    primaryDark: "#194431",
+    accent: "#39725A",
+    accentLight: "#609374",
+    accentDark: "#245B45",
+    success: "#245B45",
+    warning: "#8C5B1F",
+    danger: "#AA4036",
     background: "#FFFFFF",
-    backgroundAlt: "#F9FAFB", // gray-50
-    textPrimary: "#111827", // gray-900
-    textSecondary: "#4B5563", // gray-600
-    textMuted: "#9CA3AF", // gray-400
+    backgroundAlt: "#F7F8F4",
+    textPrimary: "#1C2923",
+    textSecondary: "#59645D",
+    textMuted: "#647067",
   },
 } as const;
 

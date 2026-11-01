@@ -158,7 +158,7 @@ export default function NewInvoicePage() {
 
       {/* Client & Details */}
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider">
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-white ">
           Invoice Details
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -228,7 +228,7 @@ export default function NewInvoicePage() {
       {/* Line Items */}
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-white ">
             Line Items
           </h2>
           <Button variant="outline" size="sm" onClick={addItem} type="button">
@@ -239,7 +239,7 @@ export default function NewInvoicePage() {
 
         <div className="space-y-3">
           {/* Header row - hidden on mobile */}
-          <div className="hidden sm:grid grid-cols-12 gap-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider px-1">
+          <div className="hidden sm:grid grid-cols-12 gap-3 text-xs font-medium text-gray-500 dark:text-gray-400  px-1">
             <div className="col-span-5">Description</div>
             <div className="col-span-2">Qty</div>
             <div className="col-span-2">Price</div>
@@ -381,7 +381,7 @@ export default function NewInvoicePage() {
 
       {/* Notes */}
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 space-y-2">
-        <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider">
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-white ">
           Notes
         </h2>
         <textarea

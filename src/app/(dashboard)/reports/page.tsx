@@ -1,5 +1,8 @@
 import { ReportCurrencyFilter } from "@/components/report-currency-filter";
-import { reportCurrencyOptions, selectReportCurrency } from "@/lib/report-currency";
+import {
+  reportCurrencyOptions,
+  selectReportCurrency,
+} from "@/lib/report-currency";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
@@ -7,26 +10,28 @@ import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/lib/utils";
 import { avgDaysToPay, revenueByMonth, topClients } from "@/lib/reports";
 import { BarChart } from "@/components/reports/bar-chart";
-import {
-  TrendingUp,
-  Clock,
-  DollarSign,
-  Users,
-  Plus,
-} from "lucide-react";
+import { Plus } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Reports",
 };
 
-export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ currency?: string | string[] }> }) {
+export default async function ReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ currency?: string | string[] }>;
+}) {
   const session = await auth();
   if (!session?.user?.id) return null;
   const params = await searchParams;
   const available = await prisma.invoice.findMany({
-    where: { userId: session.user.id }, distinct: ["currency"], select: { currency: true },
+    where: { userId: session.user.id },
+    distinct: ["currency"],
+    select: { currency: true },
   });
-  const currencies = reportCurrencyOptions(available.map(invoice => invoice.currency));
+  const currencies = reportCurrencyOptions(
+    available.map((invoice) => invoice.currency),
+  );
   const currency = selectReportCurrency(params.currency, currencies);
 
   const invoices = await prisma.invoice.findMany({
@@ -49,8 +54,9 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   monthStart.setUTCHours(0, 0, 0, 0);
 
   const mtdPaid = paid.reduce(
-    (sum, inv) => sum + (inv.paidAt && inv.paidAt >= monthStart ? inv.total : 0),
-    0
+    (sum, inv) =>
+      sum + (inv.paidAt && inv.paidAt >= monthStart ? inv.total : 0),
+    0,
   );
   const outstanding = invoices
     .filter((inv) => inv.status === "SENT" || inv.status === "OVERDUE")
@@ -61,30 +67,18 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
     {
       label: "Paid this month",
       value: formatCurrency(mtdPaid, currency),
-      icon: DollarSign,
-      color: "text-emerald-600 dark:text-emerald-400",
-      bg: "bg-emerald-50 dark:bg-emerald-900/20",
     },
     {
       label: "Outstanding",
       value: formatCurrency(outstanding, currency),
-      icon: Clock,
-      color: "text-amber-600 dark:text-amber-400",
-      bg: "bg-amber-50 dark:bg-amber-900/20",
     },
     {
       label: "Avg days to pay",
       value: avgDays === null ? "—" : `${avgDays} days`,
-      icon: TrendingUp,
-      color: "text-sky-600 dark:text-sky-400",
-      bg: "bg-sky-50 dark:bg-sky-900/20",
     },
     {
       label: "Paying clients",
       value: new Set(paid.map((inv) => inv.client.name)).size.toString(),
-      icon: Users,
-      color: "text-primary-600 dark:text-primary-400",
-      bg: "bg-primary-50 dark:bg-primary-900/20",
     },
   ];
 
@@ -95,7 +89,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
       status: inv.status,
       date: inv.paidAt ?? inv.createdAt,
     })),
-    6
+    6,
   );
 
   const clients = topClients(
@@ -104,10 +98,13 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
       total: inv.total,
       status: inv.status,
     })),
-    5
+    5,
   );
 
-  const revenuePoints = revenue.map((r) => ({ label: r.label, value: r.revenue }));
+  const revenuePoints = revenue.map((r) => ({
+    label: r.label,
+    value: r.revenue,
+  }));
 
   const hasAnyInvoices = invoices.length > 0;
 
@@ -124,26 +121,16 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
       </div>
 
       <ReportCurrencyFilter currency={currency} currencies={currencies} />
-      <p className="text-xs text-gray-500 dark:text-gray-400">All figures on this page are in {currency}. Currencies are reported separately without conversion.</p>
+      <p className="text-xs text-gray-500 dark:text-gray-400">
+        All figures on this page are in {currency}. Currencies are reported
+        separately without conversion.
+      </p>
 
-      {/* ─── KPI Cards ─── */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="summary-strip">
         {kpis.map((kpi) => (
-          <div key={kpi.label} className="glass-panel relative overflow-hidden p-5">
-            <div className={`absolute -right-4 -top-4 h-20 w-20 rounded-full opacity-20 ${kpi.bg}`} />
-            <div className="relative flex items-center gap-4">
-              <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${kpi.bg}`}>
-                <kpi.icon className={`h-5 w-5 ${kpi.color}`} />
-              </div>
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  {kpi.label}
-                </p>
-                <p className="mt-0.5 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-                  {kpi.value}
-                </p>
-              </div>
-            </div>
+          <div key={kpi.label}>
+            <p>{kpi.label}</p>
+            <strong>{kpi.value}</strong>
           </div>
         ))}
       </div>
@@ -199,13 +186,13 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 dark:border-gray-800">
-                  <th className="pb-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                  <th className="pb-3 text-left text-xs font-semibold  text-gray-400 dark:text-gray-500">
                     Client
                   </th>
-                  <th className="pb-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                  <th className="pb-3 text-right text-xs font-semibold  text-gray-400 dark:text-gray-500">
                     Invoices
                   </th>
-                  <th className="pb-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                  <th className="pb-3 text-right text-xs font-semibold  text-gray-400 dark:text-gray-500">
                     Revenue
                   </th>
                 </tr>
