@@ -11,6 +11,7 @@ datasource db {
 // ─── NextAuth Models ─────────────────────────────────────────────
 
 model User {
+  apiKeys ApiKey[]
   id            String    @id @default(cuid())
   name          String?
   email         String?   @unique
@@ -237,4 +238,21 @@ model EstimateItem {
   createdAt   DateTime @default(now())
 
   estimate Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+}
+
+/// Machine credential so an autonomous agent (or script) can bill without a
+/// browser session. Only the SHA-256 hash is stored; the plaintext key is
+/// shown exactly once at creation and is unrecoverable afterwards.
+model ApiKey {
+  id         String    @id @default(cuid())
+  userId     String
+  name       String
+  prefix     String    @unique
+  hash       String    @unique
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

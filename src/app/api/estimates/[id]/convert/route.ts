@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { lockOwner } from "@/lib/billing";
 import { allocateInvoiceNumber } from "@/lib/invoice-sequence";
+import { requireUser } from "@/lib/require-user";
 
 /**
  * POST /api/estimates/[id]/convert
@@ -21,14 +22,17 @@ export async function POST(
   { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
   const params = await paramsPromise;
-  const session = await auth();
-  if (!session?.user?.id) {
+  const userId = await requireUser(req);
+
+  if (!userId) {
+
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   }
 
   try {
     const estimate = await prisma.estimate.findFirst({
-      where: { id: params.id, userId: session.user.id },
+      where: { id: params.id, userId: userId },
       include: { items: { orderBy: { createdAt: "asc" } } },
     });
 
@@ -50,7 +54,7 @@ export async function POST(
       );
     }
 
-    const ownerId = session.user.id;
+    const ownerId = userId;
     const invoice = await prisma.$transaction(async (tx) => {
       await lockOwner(tx, estimate.userId);
       const claimed = await tx.estimate.updateMany({

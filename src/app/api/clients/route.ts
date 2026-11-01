@@ -6,19 +6,19 @@ import {
   clientCreateSchema,
   clientUpdateSchema,
 } from "@/lib/validators/clients";
+import { requireUser } from "@/lib/require-user";
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
+    const userId = await requireUser(req);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
   const { searchParams } = new URL(req.url);
   // Invoice/estimate pickers do not need invoice history or reporting totals.
   // Keep this path small and independent of unrelated financial queries.
   if (searchParams.get("view") === "options") {
     const clients = await prisma.client.findMany({
-      where: { userId: session.user.id },
+      where: { userId: userId },
       select: { id: true, name: true, email: true, company: true },
       orderBy: { name: "asc" },
     });
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
   const currency = requestedCurrency === null ? "USD" : normalizeReportCurrency(requestedCurrency);
   if (!currency) return NextResponse.json({ error: "Invalid currency" }, { status: 400 });
 
-  const where: any = { userId: session.user.id };
+  const where: any = { userId: userId };
   if (search) {
     where.OR = [
       { name: { contains: search, mode: "insensitive" } },
@@ -73,11 +73,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
+    const userId = await requireUser(req);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
   try {
     const parsed = clientCreateSchema.safeParse(await req.json());
     if (!parsed.success) {
@@ -94,7 +93,7 @@ export async function POST(req: NextRequest) {
         email,
         company: company || null,
         phone: phone || null,
-        userId: session.user.id,
+        userId: userId,
       },
     });
 

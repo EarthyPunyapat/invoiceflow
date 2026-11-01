@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { estimateStatusUpdateSchema } from "@/lib/validators";
+import { requireUser } from "@/lib/require-user";
 
 // ─── GET /api/estimates/[id] ────────────────────────────────────────
 export async function GET(
@@ -11,13 +12,13 @@ export async function GET(
   { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
   const params = await paramsPromise;
-  const session = await auth();
-  if (!session?.user?.id) {
+  const userId = await requireUser(req);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const estimate = await prisma.estimate.findFirst({
-    where: { id: params.id, userId: session.user.id },
+    where: { id: params.id, userId: userId },
     include: {
       client: true,
       items: { orderBy: { createdAt: "asc" } },
@@ -45,9 +46,9 @@ export async function PATCH(
   { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
   const params = await paramsPromise;
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const ownerId = session.user.id;
+  const userId = await requireUser(req);
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const ownerId = userId;
   try {
     const parsed = estimateStatusUpdateSchema.safeParse(await req.json());
     if (!parsed.success) {
@@ -80,9 +81,9 @@ export async function DELETE(
   { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
   const params = await paramsPromise;
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const ownerId = session.user.id;
+  const userId = await requireUser(req);
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const ownerId = userId;
   try {
     return await prisma.$transaction(async tx => {
       await lockOwner(tx, ownerId);

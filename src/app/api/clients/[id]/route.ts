@@ -3,19 +3,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { clientUpdateSchema } from "@/lib/validators/clients";
+import { requireUser } from "@/lib/require-user";
 
 export async function GET(
   req: NextRequest,
   { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
   const params = await paramsPromise;
-  const session = await auth();
-  if (!session?.user?.id) {
+  const userId = await requireUser(req);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const client = await prisma.client.findFirst({
-    where: { id: params.id, userId: session.user.id },
+    where: { id: params.id, userId: userId },
     include: {
       invoices: {
         orderBy: { createdAt: "desc" },
@@ -36,8 +37,8 @@ export async function PATCH(
   { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
   const params = await paramsPromise;
-  const session = await auth();
-  if (!session?.user?.id) {
+  const userId = await requireUser(req);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -52,7 +53,7 @@ export async function PATCH(
     const data = parsed.data;
 
     const existing = await prisma.client.findFirst({
-      where: { id: params.id, userId: session.user.id },
+      where: { id: params.id, userId: userId },
     });
 
     if (!existing) {
@@ -102,9 +103,9 @@ export async function DELETE(
   { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
   const params = await paramsPromise;
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const ownerId = session.user.id;
+  const userId = await requireUser(req);
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const ownerId = userId;
   try {
     return await prisma.$transaction(async tx => {
       await lockOwner(tx, ownerId);

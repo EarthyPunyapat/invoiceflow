@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildInvoicePdf } from "@/lib/pdf";
+import { requireUser } from "@/lib/require-user";
 
 // pdfkit depends on Node streams/fs internals — never run on the edge.
 export const runtime = "nodejs";
@@ -13,12 +14,11 @@ export async function GET(
 ) {
   const params = await paramsPromise;
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const userId = await requireUser(_req);
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = session.user.id;
 
     const invoice = await prisma.invoice.findFirst({
       where: { id: params.id, userId },

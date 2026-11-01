@@ -9,21 +9,21 @@ import {
   sumCents,
 } from "@/lib/money";
 import { estimateCreateSchema } from "@/lib/validators";
+import { requireUser } from "@/lib/require-user";
 
 // ─── GET /api/estimates — list with filters + pagination ────────────
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
+    const userId = await requireUser(req);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
   const search = searchParams.get("search");
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "20");
 
-  const where: any = { userId: session.user.id };
+  const where: any = { userId: userId };
   if (status) where.status = status;
   if (search) {
     where.OR = [
@@ -51,11 +51,10 @@ export async function GET(req: NextRequest) {
 
 // ─── POST /api/estimates — create ───────────────────────────────────
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
+    const userId = await requireUser(req);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
   try {
     const parsed = estimateCreateSchema.safeParse(await req.json());
     if (!parsed.success) {
@@ -77,7 +76,7 @@ export async function POST(req: NextRequest) {
 
     // Verify client belongs to user
     const client = await prisma.client.findFirst({
-      where: { id: clientId, userId: session.user.id },
+      where: { id: clientId, userId: userId },
     });
     if (!client) {
       return NextResponse.json({ error: "Client not found" }, { status: 404 });
@@ -96,7 +95,6 @@ export async function POST(req: NextRequest) {
     const subtotal = centsToDollars(subtotalCents);
     const total = centsToDollars(totalCents);
 
-    const userId = session.user.id;
     const estimate = await prisma.$transaction(async tx => {
       const prefix = monthPrefix(new Date(issueDate)).replace("INV", "EST");
       // Estimate numbers are globally unique in the existing schema.

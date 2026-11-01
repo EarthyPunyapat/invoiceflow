@@ -2,16 +2,19 @@ import { normalizeReportCurrency } from "@/lib/report-currency";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/require-user";
 
 // GET /api/dashboard/stats — aggregate dashboard statistics
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const userId = await requireUser(req);
+
+    if (!userId) {
+
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     }
 
-    const userId = session.user.id;
     const requestedCurrency = req.nextUrl.searchParams.get("currency");
     const currency = requestedCurrency === null ? "USD" : normalizeReportCurrency(requestedCurrency);
     if (!currency) return NextResponse.json({ error: "Invalid currency" }, { status: 400 });

@@ -15,19 +15,20 @@ import {
   invoiceStatusUpdateSchema,
   invoiceUpdateSchema,
 } from "@/lib/validators/invoices";
+import { requireUser } from "@/lib/require-user";
 
 export async function GET(
   req: NextRequest,
   { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
   const params = await paramsPromise;
-  const session = await auth();
-  if (!session?.user?.id) {
+  const userId = await requireUser(req);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const invoice = await prisma.invoice.findFirst({
-    where: { id: params.id, userId: session.user.id },
+    where: { id: params.id, userId: userId },
     include: {
       client: true,
       items: { orderBy: { createdAt: "asc" } },
@@ -46,8 +47,8 @@ export async function PATCH(
   { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
   const params = await paramsPromise;
-  const session = await auth();
-  if (!session?.user?.id) {
+  const userId = await requireUser(req);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -62,14 +63,14 @@ export async function PATCH(
     const { status } = parsed.data;
 
     const invoice = await prisma.invoice.findFirst({
-      where: { id: params.id, userId: session.user.id },
+      where: { id: params.id, userId: userId },
     });
 
     if (!invoice) {
       return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
     }
 
-    const ownerId = session.user.id;
+    const ownerId = userId;
     const updated = await prisma.$transaction(async (tx) => {
       await lockOwner(tx, ownerId);
       const current = await tx.invoice.findUniqueOrThrow({ where: { id: invoice.id } });
@@ -102,9 +103,9 @@ export async function PUT(
   { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
   const params = await paramsPromise;
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const ownerId = session.user.id;
+  const userId = await requireUser(req);
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const ownerId = userId;
   try {
     const parsed = invoiceUpdateSchema.safeParse(await req.json());
     if (!parsed.success) {
@@ -151,9 +152,9 @@ export async function DELETE(
   { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
   const params = await paramsPromise;
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const ownerId = session.user.id;
+  const userId = await requireUser(req);
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const ownerId = userId;
   try {
     return await prisma.$transaction(async tx => {
       await lockOwner(tx, ownerId);

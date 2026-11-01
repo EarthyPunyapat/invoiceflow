@@ -11,10 +11,11 @@ import {
 } from "@/lib/money";
 import { buildInvoiceWhere, parseListParams } from "@/lib/invoice-filters";
 import { invoiceCreateSchema } from "@/lib/validators";
+import { requireUser } from "@/lib/require-user";
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const userId = await requireUser(req);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
   );
   // Shared pure filter builder: owner-scoped, validated status, q/search
   // free-text across invoice number + client name/company.
-  const where = buildInvoiceWhere(session.user.id, {
+  const where = buildInvoiceWhere(userId, {
     q: searchParams.get("q"),
     search: searchParams.get("search"), // legacy alias
     status: searchParams.get("status"),
@@ -58,8 +59,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const userId = await requireUser(req);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
 
     // Verify client belongs to user
     const client = await prisma.client.findFirst({
-      where: { id: clientId, userId: session.user.id },
+      where: { id: clientId, userId },
     });
     if (!client) {
       return NextResponse.json({ error: "Client not found" }, { status: 404 });
@@ -95,7 +96,7 @@ export async function POST(req: NextRequest) {
     const subtotal = centsToDollars(subtotalCents);
     const total = centsToDollars(totalCents);
 
-    const ownerId = session.user.id;
+    const ownerId = userId;
     const invoice = await prisma.$transaction(async (tx) => {
       await lockOwner(tx, ownerId);
       const invoiceNumber = await allocateInvoiceNumber(tx, ownerId, new Date());
