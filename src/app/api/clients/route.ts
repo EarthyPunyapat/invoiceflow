@@ -14,6 +14,17 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
+  // Invoice/estimate pickers do not need invoice history or reporting totals.
+  // Keep this path small and independent of unrelated financial queries.
+  if (searchParams.get("view") === "options") {
+    const clients = await prisma.client.findMany({
+      where: { userId: session.user.id },
+      select: { id: true, name: true, email: true, company: true },
+      orderBy: { name: "asc" },
+    });
+    return NextResponse.json({ clients });
+  }
+
   const search = searchParams.get("search");
   const requestedCurrency = searchParams.get("currency");
   const currency = requestedCurrency === null ? "USD" : normalizeReportCurrency(requestedCurrency);

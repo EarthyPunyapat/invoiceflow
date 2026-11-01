@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { ClientPicker } from "@/components/client-picker";
 import { formatCurrency } from "@/lib/utils";
 import {
   Plus,
@@ -16,13 +17,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-interface Client {
-  id: string;
-  name: string;
-  email: string;
-  company?: string | null;
-}
-
 interface LineItem {
   id: string;
   description: string;
@@ -32,7 +26,6 @@ interface LineItem {
 
 export default function NewInvoicePage() {
   const router = useRouter();
-  const [clients, setClients] = useState<Client[]>([]);
   const [clientId, setClientId] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [invoiceDate, setInvoiceDate] = useState(
@@ -48,13 +41,6 @@ export default function NewInvoicePage() {
   ]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    fetch("/api/clients")
-      .then((res) => res.json())
-      .then((data) => setClients(data.clients || []))
-      .catch(console.error);
-  }, []);
 
   const subtotal = items.reduce(
     (sum, item) => sum + item.quantity * item.unitPrice,
@@ -176,19 +162,7 @@ export default function NewInvoicePage() {
           Invoice Details
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Select
-            id="client"
-            label="Client"
-            value={clientId}
-            onChange={(e) => setClientId(e.target.value)}
-            options={[
-              { value: "", label: "Select a client..." },
-              ...clients.map((c) => ({
-                value: c.id,
-                label: `${c.name}${c.company ? ` (${c.company})` : ""}`,
-              })),
-            ]}
-          />
+          <ClientPicker value={clientId} onChange={setClientId} disabled={saving} />
           <div className="space-y-1">
             <label
               htmlFor="invoiceDate"

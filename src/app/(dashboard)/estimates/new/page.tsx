@@ -1,20 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { ClientPicker } from "@/components/client-picker";
 import { formatCurrency } from "@/lib/utils";
 import { Plus, Trash2, ArrowLeft, Loader2, Save } from "lucide-react";
 import Link from "next/link";
-
-interface Client {
-  id: string;
-  name: string;
-  email: string;
-  company?: string | null;
-}
 
 interface LineItem {
   id: string;
@@ -31,7 +24,6 @@ const inDays = (days: number) =>
 
 export default function NewEstimatePage() {
   const router = useRouter();
-  const [clients, setClients] = useState<Client[]>([]);
   const [clientId, setClientId] = useState("");
   const [issueDate, setIssueDate] = useState(today());
   const [expiryDate, setExpiryDate] = useState(inDays(30));
@@ -42,13 +34,6 @@ export default function NewEstimatePage() {
   ]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    fetch("/api/clients")
-      .then((res) => res.json())
-      .then((data) => setClients(data.clients || []))
-      .catch(console.error);
-  }, []);
 
   const subtotal = items.reduce(
     (sum, item) => sum + item.quantity * item.unitPrice,
@@ -142,27 +127,7 @@ export default function NewEstimatePage() {
         {/* Client + dates */}
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label
-                htmlFor="client"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
-              >
-                Client *
-              </label>
-              <Select
-                id="client"
-                value={clientId}
-                onChange={(e) => setClientId(e.target.value)}
-                required
-                options={[
-                  { value: "", label: "Select a client..." },
-                  ...clients.map((c) => ({
-                    value: c.id,
-                    label: `${c.name}${c.company ? ` — ${c.company}` : ""}`,
-                  })),
-                ]}
-              />
-            </div>
+            <ClientPicker value={clientId} onChange={setClientId} disabled={saving} />
             <div>
               <label
                 htmlFor="issueDate"

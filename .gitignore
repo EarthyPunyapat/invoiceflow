@@ -41,3 +41,7 @@ prisma/generated/
 .neon
 .vercel
 .env*
+
+# browser test artifacts
+playwright-report/
+test-results/

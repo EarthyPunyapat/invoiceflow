@@ -116,6 +116,8 @@ pnpm test
 pnpm run lint
 pnpm run build
 pnpm run typecheck
+# After building, against the disposable local test DB:
+pnpm run test:browser
 pnpm audit --prod --audit-level high
 ```
 
@@ -138,7 +140,7 @@ pnpm run test:integration
 
 Run these exports in a separate shell from the development server. The suite rejects remote databases and other database names. It uses real PostgreSQL transactions and signed Stripe fixtures, with external Stripe/Resend requests mocked. It covers invoice totals, public links, checkout reuse, webhook verification and retries, concurrent numbering/conversion, and recurring transaction rollback. It does not establish that live OAuth, payment or email credentials work.
 
-GitHub Actions runs frozen installation, Prisma generation, migrations, lint, unit and integration tests, production build, typechecking and a production dependency audit using PostgreSQL 16 and Node.js 22.
+GitHub Actions runs frozen installation, Prisma generation, migrations, lint, unit/integration tests, the production build, Chromium browser workflows, typechecking and a production dependency audit using PostgreSQL 16 and Node.js 22.
 
 ## Deployment
 
@@ -211,3 +213,13 @@ src/components/     UI, reports and marketing components
 integration/        PostgreSQL-backed billing regression tests
 .github/workflows/  CI
 ```
+
+### Browser workflow tests
+
+Run `pnpm run test:browser` after `pnpm run build`, with `DATABASE_URL` and
+`DATABASE_URL_UNPOOLED` pointing to the disposable local `invoiceflow_test`
+database. Install Chromium using `pnpm exec playwright install chromium` when a
+system Chromium is unavailable. Browser tests start a production server on
+port 3100, use isolated test accounts and a locally signed session, and exercise
+actual pages, API requests and database writes. They do not complete Google OAuth
+or send real emails/payments.

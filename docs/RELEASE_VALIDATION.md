@@ -61,3 +61,15 @@ gate, then read the original invoice successfully afterward with its data
 preserved. Empty databases, repeat/concurrent builds and refusal of drift,
 duplicates, unknown migration history and mismatched targets were also tested.
 Published migration SQL and checksums were left unchanged.
+
+## Client creation browser regression — 2 November 2026
+
+The invoice/estimate client selector now includes inline client creation,
+automatically selects the saved client, preserves the parent draft and displays
+loading/retry/session-expiry errors. Its lightweight options API is owner-scoped.
+
+Eight Chromium tests against the local production server cover standalone client
+creation and selection, first-client creation during invoice/estimate entry,
+saving the resulting invoice/estimate, failed list/save retries, expired sessions,
+validation/cancel and mobile entry. These browser checks now run in GitHub CI.
+External production verification remains separate from these local results.
