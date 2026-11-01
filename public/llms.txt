@@ -1,0 +1,46 @@
+# InvoiceFlow
+
+> Invoicing for humans and for autonomous agents. Create clients, issue invoices,
+> email them, and hand back a payable Stripe link. Machine access is one bearer
+> API key over plain HTTPS — no OAuth, no cookies, no session, no headless browser.
+
+## Agent SDK
+
+- [SDK page](https://invoiceflow-ten-azure.vercel.app/sdk): overview, quickstart, endpoints.
+- [Client library](https://invoiceflow-ten-azure.vercel.app/sdk/invoiceflow-client.mjs): zero-dependency ESM client, Node 18+.
+- [Verifier](https://invoiceflow-ten-azure.vercel.app/sdk/verify-no-key.mjs): runnable auth-boundary proof. Requires no credentials.
+- [README](https://invoiceflow-ten-azure.vercel.app/sdk/README.md): full reference and error table.
+- [REST reference](https://invoiceflow-ten-azure.vercel.app/api-docs)
+
+## Auth
+
+Keys look like `ifk_<64 hex>` and are shown once. Only a SHA-256 hash and a
+non-secret 12-character prefix are stored, so a lost key is unrecoverable:
+revoke and re-issue. A key is scoped to one account and can create a payable
+invoice but cannot pay one.
+
+## Endpoints (all require `Authorization: Bearer ifk_...`)
+
+- `GET /api/invoices` — list invoices, paginated
+- `POST /api/invoices` — create an invoice
+- `GET /api/invoices/:id` — read one invoice
+- `POST /api/invoices/:id/send` — email the invoice to the client
+- `GET /api/clients` — list clients
+- `POST /api/clients` — create a client
+- `GET /api/dashboard/stats` — account and counts
+
+## Measured behaviour — read before automating
+
+- There is NO idempotency key. Retrying `POST /api/invoices` after a timeout can
+  create a duplicate invoice. Read back before retrying.
+- `POST /api/invoices/:id/send` emails a human. Do not retry blindly.
+- Amounts are integer minor units (cents). `unitPrice: 25000` is $250.00.
+- `404` also means "not yours". The API will not disclose whether another
+  account's invoice exists.
+- Unauthenticated requests return `401`. `POST /api/keys` is not reachable
+  without a credential, so a leaked key cannot mint further keys.
+
+## Verify without credentials
+
+    curl -O https://invoiceflow-ten-azure.vercel.app/sdk/verify-no-key.mjs
+    node verify-no-key.mjs      # 8 passed, 0 failed
