@@ -84,8 +84,14 @@ Measured, not claimed:
   refused rather than disclosed it
 - `createClient` -> `{ client: { id, name, email, ... } }`
 - incomplete invoice body -> `400`, schema enforced server-side
-- a normal key **cannot** mint more keys (`POST /api/keys` refused) — no privilege
-  escalation from a leaked agent credential
+- an unauthenticated caller cannot mint a key (`POST /api/keys` -> `401`)
+- malformed keys are rejected client-side, before any bytes leave the machine
+
+Reproduce the whole list yourself, with **no credentials**:
+
+```bash
+node sdk/verify-no-key.mjs    # 8 passed, 0 failed
+```
 
 ## Threat model
 
