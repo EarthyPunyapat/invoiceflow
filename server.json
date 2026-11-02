@@ -32,5 +32,19 @@
         }
       ]
     }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://invoiceflow-ten-azure.vercel.app/api/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer token: `Bearer ifk_...` where ifk_... is an InvoiceFlow API key. Without it the server lists tools but every call explains what is missing.",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
   ]
 }

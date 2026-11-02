@@ -1,0 +1,18 @@
+# Smithery configuration — https://smithery.ai/docs/build/project-config
+# This server is remote-first: point at the hosted endpoint, no install.
+startCommand:
+  type: "http"
+  url: "https://invoiceflow-ten-azure.vercel.app/api/mcp"
+  configSchema:
+    type: "object"
+    required: ["apiKey"]
+    properties:
+      apiKey:
+        type: "string"
+        title: "InvoiceFlow API key"
+        description: >-
+          Created in InvoiceFlow Settings -> API keys. Begins with ifk_.
+          Scoped to one account; revocable at any time.
+    additionalProperties: false
+  exampleConfig:
+    apiKey: "ifk_your_key_here"
