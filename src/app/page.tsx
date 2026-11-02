@@ -202,7 +202,7 @@ export default function HomePage() {
         <p>Made for the work you do.</p>
         <nav className="marketing-footer-links" aria-label="Footer">
           <Link href="/api-docs">API for agents</Link>
-          <Link href="/jeb">Jeb Memorial</Link>
+          <Link href="/jeb/">Jeb Memorial</Link>
           <a href="#product">Back to top</a>
         </nav>
       </footer>
