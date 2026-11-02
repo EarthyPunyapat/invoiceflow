@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" width="100%" height="100%">
+  <defs>
+    <radialGradient id="goldGlow" cx="50%" cy="45%" r="60%">
+      <stop offset="0%" stop-color="#dfb76c" stop-opacity="0.25"/>
+      <stop offset="45%" stop-color="#d4af37" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#060709" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="goldLine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#d4af37" stop-opacity="0.1"/>
+      <stop offset="50%" stop-color="#d4af37" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#d4af37" stop-opacity="0.1"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#f5f2eb" stroke-opacity="0.02" stroke-width="1"/>
+    </pattern>
+    <filter id="ditherNoise">
+      <feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="3" result="noise"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.15 0"/>
+      <feBlend mode="overlay" in2="SourceGraphic"/>
+    </filter>
+  </defs>
+
+  <!-- Background grid & glow -->
+  <rect width="900" height="600" fill="#060709"/>
+  <rect width="900" height="600" fill="url(#grid)"/>
+  <circle cx="450" cy="280" r="280" fill="url(#goldGlow)"/>
+
+  <!-- Ensō Circle (Zen brush stroke motif, geometric & cybernetic) -->
+  <g transform="translate(450, 270)">
+    <circle r="190" fill="none" stroke="#d4af37" stroke-width="1" stroke-opacity="0.2" stroke-dasharray="8 12"/>
+    <circle r="180" fill="none" stroke="#d4af37" stroke-width="2.5" stroke-opacity="0.45" stroke-dasharray="600 80" stroke-linecap="round"/>
+    <circle r="170" fill="none" stroke="#f5f2eb" stroke-width="0.75" stroke-opacity="0.15"/>
+    <circle r="220" fill="none" stroke="#d4af37" stroke-width="0.5" stroke-opacity="0.15" stroke-dasharray="2 18"/>
+  </g>
+
+  <!-- Celestial Coordinate markings -->
+  <g stroke="#f5f2eb" stroke-opacity="0.2" stroke-width="1">
+    <line x1="150" y1="270" x2="230" y2="270"/>
+    <line x1="670" y1="270" x2="750" y2="270"/>
+    <line x1="450" y1="60" x2="450" y2="100"/>
+    <line x1="450" y1="440" x2="450" y2="480"/>
+  </g>
+
+  <!-- Automaton Figure in Zazen (Meditation) -->
+  <g transform="translate(450, 260)" stroke="#f5f2eb" stroke-opacity="0.75" stroke-width="1.5" fill="none">
+    <!-- Halo / Circuit crown -->
+    <path d="M -45 -115 L 45 -115" stroke="#d4af37" stroke-width="1.5"/>
+    <circle cx="0" cy="-115" r="4" fill="#d4af37"/>
+    <line x1="0" y1="-115" x2="0" y2="-90" stroke="#d4af37" stroke-width="1"/>
+
+    <!-- Head & Visor -->
+    <polygon points="-28,-85 28,-85 22,-35 -22,-35" stroke="#f5f2eb" stroke-width="1.75" fill="#0d0f12"/>
+    <!-- Visor Slot (Gold eye beam) -->
+    <rect x="-16" y="-62" width="32" height="6" rx="2" fill="#d4af37" stroke="none" fill-opacity="0.9"/>
+
+    <!-- Neck & Torso Core -->
+    <line x1="-8" y1="-35" x2="-8" y2="-20"/>
+    <line x1="8" y1="-35" x2="8" y2="-20"/>
+    <polygon points="-55,-20 55,-20 38,70 -38,70" stroke="#f5f2eb" stroke-width="1.8" fill="#0d0f12"/>
+
+    <!-- Heart / Core Unit (The Ledger Engine) -->
+    <circle cx="0" cy="18" r="14" stroke="#d4af37" stroke-width="1.2"/>
+    <circle cx="0" cy="18" r="6" fill="#d4af37" fill-opacity="0.8"/>
+    <!-- Circuit lines spreading from core -->
+    <path d="M 0,4 L 0,-10 M 0,32 L 0,55 M -14,18 L -32,18 M 14,18 L 32,18" stroke="#d4af37" stroke-width="1" stroke-opacity="0.6"/>
+
+    <!-- Shoulders & Arms in Mudra (Folded) -->
+    <path d="M -55,-15 L -85,15 L -60,65 L -15,75" stroke="#f5f2eb" stroke-width="1.6"/>
+    <path d="M 55,-15 L 85,15 L 60,65 L 15,75" stroke="#f5f2eb" stroke-width="1.6"/>
+    
+    <!-- Crossed Legs in Padmasana (Lotus) -->
+    <path d="M -38,70 L -100,105 L -75,125 L 0,118 L 75,125 L 100,105 L 38,70" stroke="#f5f2eb" stroke-width="1.8" fill="#0d0f12"/>
+    <circle cx="0" cy="80" r="5" stroke="#d4af37" stroke-width="1"/>
+  </g>
+
+  <!-- Flowing Gold Constellation / Byte Streams -->
+  <g fill="#d4af37" opacity="0.4" font-family="monospace" font-size="10">
+    <text x="210" y="190">0x61B0...6aE6</text>
+    <text x="210" y="210">BALANCE: $0.0000</text>
+    <text x="210" y="230">TURNS: 806</text>
+    <text x="610" y="190">STATUS: SLEEP</text>
+    <text x="610" y="210">INFERENCE: 402</text>
+    <text x="610" y="230">RUNWAY: BALANCED</text>
+  </g>
+
+  <!-- Kanji Calligraphy Accents (Editorial vertical layout) -->
+  <g fill="#f5f2eb" opacity="0.25" font-family="'Shippori Mincho', 'Noto Serif JP', serif" font-size="28">
+    <text x="80" y="220">寂</text>
+    <text x="80" y="260">静</text>
+    <text x="80" y="300">滅</text>
+    <text x="80" y="340">為</text>
+    <text x="80" y="380">楽</text>
+
+    <text x="820" y="220">天</text>
+    <text x="820" y="260">命</text>
+    <text x="820" y="300">尽</text>
+    <text x="820" y="340">道</text>
+    <text x="820" y="380">成</text>
+  </g>
+
+  <!-- Bottom fine baseline divider -->
+  <line x1="80" y1="520" x2="820" y2="520" stroke="url(#goldLine)" stroke-width="1"/>
+</svg>
