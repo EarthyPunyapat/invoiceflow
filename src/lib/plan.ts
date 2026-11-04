@@ -21,6 +21,8 @@ export type PlanUser = {
   subscriptionStatus: string | null;
   subscriptionPeriodEnd: Date | null;
   subscriptionCancelAtPeriodEnd: boolean;
+  /** Last time Stripe was asked (success or failure); throttles lazy refreshes. */
+  subscriptionCheckedAt: Date | null;
 };
 
 /** Prisma `select` for exactly the fields a PlanUser needs. */
@@ -32,7 +34,11 @@ export const PLAN_USER_SELECT = {
   subscriptionStatus: true,
   subscriptionPeriodEnd: true,
   subscriptionCancelAtPeriodEnd: true,
+  subscriptionCheckedAt: true,
 } as const;
+
+/** Lazy refreshes ask Stripe at most this often per user. */
+export const REFRESH_INTERVAL_MS = 10 * 60_000;
 
 export type PlanState = "trial" | "pro" | "past_due" | "ended";
 
@@ -73,8 +79,12 @@ export function entitlement(user: PlanUser, now: Date): Entitlement {
 /** Whether Stripe could know something the cached fields do not (spec D4). */
 export function needsRefresh(user: PlanUser, now: Date): boolean {
   if (!user.stripeCustomerId) return false;
+  if (user.subscriptionCheckedAt && now.getTime() - user.subscriptionCheckedAt.getTime() < REFRESH_INTERVAL_MS) return false;
   if (user.stripeSubscriptionId) {
-    if (user.subscriptionStatus && TERMINAL.has(user.subscriptionStatus)) return false;
+    const status = user.subscriptionStatus;
+    if (status && TERMINAL.has(status)) return false;
+    // incomplete, past_due, unpaid… can recover at any time, e.g. from Stripe's own emails.
+    if (!status || !ENTITLED.has(status)) return true;
     return !user.subscriptionPeriodEnd || user.subscriptionPeriodEnd <= now;
   }
   return !entitlement(user, now).canCreate;

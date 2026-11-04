@@ -15,6 +15,24 @@ export type BillingResult = { url: string } | { status: number; error: string };
 
 const NOT_CONFIGURED = { status: 503, error: "Billing is not configured yet." };
 
+/** Stored Stripe billing IDs reset, e.g. after test keys are replaced by live keys. */
+const CLEARED = {
+  stripeCustomerId: null,
+  stripeSubscriptionId: null,
+  subscriptionStatus: null,
+  subscriptionPeriodEnd: null,
+  subscriptionCancelAtPeriodEnd: false,
+};
+
+/** Stripe says the object does not exist in this account and mode — not an outage. */
+function isMissing(error: unknown): boolean {
+  return (error as { code?: string } | null)?.code === "resource_missing";
+}
+
+async function markChecked(userId: string) {
+  await prisma.user.update({ where: { id: userId }, data: { subscriptionCheckedAt: new Date() } });
+}
+
 async function planUser(userId: string): Promise<PlanUser> {
   return prisma.user.findUniqueOrThrow({ where: { id: userId }, select: PLAN_USER_SELECT });
 }
@@ -34,6 +52,7 @@ async function storeSubscription(userId: string, expectedCustomer: string, sub: 
       subscriptionStatus: sub.status,
       subscriptionPeriodEnd: new Date(sub.current_period_end * 1000),
       subscriptionCancelAtPeriodEnd: sub.cancel_at_period_end,
+      subscriptionCheckedAt: new Date(),
     },
   });
   return true;
@@ -43,30 +62,48 @@ export async function refreshSubscription(userId: string): Promise<void> {
   const user = await planUser(userId);
   if (!user.stripeCustomerId) return;
   const stripe = getStripe();
-  const sub = user.stripeSubscriptionId
-    ? await stripe.subscriptions.retrieve(user.stripeSubscriptionId)
-    : (await stripe.subscriptions.list({ customer: user.stripeCustomerId, status: "all", limit: 1 })).data[0];
-  if (sub) await storeSubscription(userId, user.stripeCustomerId, sub);
+  let sub: Stripe.Subscription | undefined;
+  try {
+    sub = user.stripeSubscriptionId
+      ? await stripe.subscriptions.retrieve(user.stripeSubscriptionId)
+      : (await stripe.subscriptions.list({ customer: user.stripeCustomerId, status: "all", limit: 1 })).data[0];
+  } catch (error) {
+    if (!isMissing(error)) throw error;
+    // IDs from another Stripe mode or account must never keep granting Pro.
+    await prisma.user.update({ where: { id: userId }, data: { ...CLEARED, subscriptionCheckedAt: new Date() } });
+    return;
+  }
+  const stored = sub ? await storeSubscription(userId, user.stripeCustomerId, sub) : false;
+  if (!stored) await markChecked(userId);
+}
+
+/**
+ * Spec D6: while a renewal cannot be confirmed (Stripe unreachable, or the
+ * retry is throttled after a failure), someone whose last known status was
+ * paid keeps working. A successful refresh replaces the cached status.
+ */
+function withRenewalGrace(user: PlanUser, now: Date): Entitlement {
+  const plan = entitlement(user, now);
+  if (plan.canCreate || (user.subscriptionStatus !== "active" && user.subscriptionStatus !== "trialing")) return plan;
+  return { ...plan, state: "pro", canCreate: true, activeUntil: user.subscriptionPeriodEnd };
 }
 
 export async function getEntitlement(userId: string, options: { refresh?: boolean } = {}): Promise<Entitlement> {
   const cached = await planUser(userId);
   const now = new Date();
-  if (!options.refresh && !needsRefresh(cached, now)) return entitlement(cached, now);
+  if (!options.refresh && !needsRefresh(cached, now)) return withRenewalGrace(cached, now);
   try {
     await refreshSubscription(userId);
     return entitlement(await planUser(userId), now);
   } catch (error) {
     console.error("[subscription] refresh failed", error instanceof Error ? error.message : error);
-    // Spec D6: a provider outage never blocks someone whose last known status was paid.
-    if (cached.subscriptionStatus === "active" || cached.subscriptionStatus === "trialing") {
-      return { ...entitlement(cached, now), state: "pro", canCreate: true, activeUntil: cached.subscriptionPeriodEnd };
-    }
-    return entitlement(cached, now);
+    // Throttle retries so an outage cannot stall every page on the SDK timeout.
+    await markChecked(userId).catch(() => {});
+    return withRenewalGrace(cached, now);
   }
 }
 
-async function ensureCustomer(userId: string): Promise<string> {
+async function ensureCustomer(userId: string, replacing?: string): Promise<string> {
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
     select: { email: true, name: true, stripeCustomerId: true },
@@ -74,7 +111,7 @@ async function ensureCustomer(userId: string): Promise<string> {
   if (user.stripeCustomerId) return user.stripeCustomerId;
   const customer = await getStripe().customers.create(
     { email: user.email ?? undefined, name: user.name ?? undefined, metadata: { userId } },
-    { idempotencyKey: `invoiceflow-customer-${userId}` },
+    { idempotencyKey: replacing ? `invoiceflow-customer-${userId}-after-${replacing}` : `invoiceflow-customer-${userId}` },
   );
   // Only the first concurrent request records its customer; everyone re-reads.
   await prisma.user.updateMany({ where: { id: userId, stripeCustomerId: null }, data: { stripeCustomerId: customer.id } });
@@ -87,9 +124,8 @@ export async function startCheckout(userId: string): Promise<BillingResult> {
   if ((await getEntitlement(userId)).state === "pro") {
     return { status: 409, error: "You already have InvoiceFlow Pro. Use Manage billing to change it." };
   }
-  const customer = await ensureCustomer(userId);
   const origin = appUrl();
-  const session = await getStripe().checkout.sessions.create({
+  const create = (customer: string) => getStripe().checkout.sessions.create({
     mode: "subscription",
     customer,
     client_reference_id: userId,
@@ -105,6 +141,16 @@ export async function startCheckout(userId: string): Promise<BillingResult> {
     success_url: `${origin}/settings?billing=success&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/settings?billing=cancelled`,
   });
+  const customer = await ensureCustomer(userId);
+  let session: Stripe.Checkout.Session;
+  try {
+    session = await create(customer);
+  } catch (error) {
+    if (!isMissing(error)) throw error;
+    // The stored customer belongs to another Stripe mode or account: start over once.
+    await prisma.user.update({ where: { id: userId }, data: CLEARED });
+    session = await create(await ensureCustomer(userId, customer));
+  }
   if (!session.url) return { status: 502, error: "Stripe did not return a checkout link. Try again." };
   return { url: session.url };
 }

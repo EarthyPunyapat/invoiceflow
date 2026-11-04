@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import Stripe from "stripe";
 
 const stripe = vi.hoisted(() => ({
   customersCreate: vi.fn(),
@@ -39,6 +40,8 @@ const subscription = (overrides: Record<string, unknown> = {}) => ({
   current_period_end: 1767225600, cancel_at_period_end: false, ...overrides,
 });
 const uniqueCustomer = () => `cus_${crypto.randomUUID()}`;
+const missing = (what: string) =>
+  new Stripe.errors.StripeInvalidRequestError({ type: "invalid_request_error", code: "resource_missing", message: `No such ${what}` });
 
 beforeAll(() => {
   const url = new URL(process.env.DATABASE_URL || "http://missing");
@@ -162,5 +165,49 @@ describe("InvoiceFlow Pro subscription sync", () => {
 
     const newcomer = await owner();
     expect(await openBillingPortal(newcomer.id)).toEqual({ status: 400, error: "No billing account yet. Subscribe first." });
+  });
+
+  it("forgets Stripe IDs from another mode instead of granting Pro forever", async () => {
+    // e.g. a test-mode subscription after production switches to live keys.
+    const user = await owner({
+      stripeCustomerId: uniqueCustomer(), stripeSubscriptionId: `sub_${crypto.randomUUID()}`,
+      subscriptionStatus: "active", subscriptionPeriodEnd: new Date(Date.now() - 60_000), trialEndsAt: new Date(Date.now() - 30 * DAY),
+    });
+    stripe.subscriptionsRetrieve.mockRejectedValue(missing("subscription"));
+    expect(await getEntitlement(user.id)).toMatchObject({ state: "ended", canCreate: false });
+    expect(await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).toMatchObject({
+      stripeCustomerId: null, stripeSubscriptionId: null, subscriptionStatus: null, subscriptionPeriodEnd: null,
+    });
+  });
+
+  it("recreates a customer that no longer exists when starting checkout", async () => {
+    const user = await owner({ stripeCustomerId: uniqueCustomer(), trialEndsAt: new Date(Date.now() - DAY) });
+    const fresh = uniqueCustomer();
+    stripe.subscriptionsList.mockResolvedValue({ data: [] });
+    stripe.customersCreate.mockResolvedValue({ id: fresh });
+    stripe.sessionsCreate.mockRejectedValueOnce(missing("customer"));
+    expect(await startCheckout(user.id)).toEqual({ url: "https://checkout.stripe.com/c/pay/cs_1" });
+    expect(stripe.customersCreate).toHaveBeenCalledTimes(1);
+    expect(stripe.sessionsCreate).toHaveBeenLastCalledWith(expect.objectContaining({ customer: fresh }));
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).stripeCustomerId).toBe(fresh);
+  });
+
+  it("waits ten minutes before retrying Stripe after a failed refresh", async () => {
+    const user = await owner({
+      stripeCustomerId: uniqueCustomer(), stripeSubscriptionId: `sub_${crypto.randomUUID()}`,
+      subscriptionStatus: "active", subscriptionPeriodEnd: new Date(Date.now() - 60_000), trialEndsAt: new Date(Date.now() - 30 * DAY),
+    });
+    stripe.subscriptionsRetrieve.mockRejectedValue(new Error("Stripe is unavailable"));
+    expect((await getEntitlement(user.id)).canCreate).toBe(true);
+    expect((await getEntitlement(user.id)).canCreate).toBe(true);
+    expect(stripe.subscriptionsRetrieve).toHaveBeenCalledTimes(1);
+  });
+
+  it("checks an abandoned checkout at most once per ten minutes", async () => {
+    const user = await owner({ stripeCustomerId: uniqueCustomer(), trialEndsAt: new Date(Date.now() - DAY) });
+    stripe.subscriptionsList.mockResolvedValue({ data: [] });
+    expect((await getEntitlement(user.id)).state).toBe("ended");
+    expect((await getEntitlement(user.id)).state).toBe("ended");
+    expect(stripe.subscriptionsList).toHaveBeenCalledTimes(1);
   });
 });

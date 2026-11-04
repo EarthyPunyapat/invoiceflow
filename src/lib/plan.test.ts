@@ -9,6 +9,7 @@ const base: PlanUser = {
   subscriptionStatus: null,
   subscriptionPeriodEnd: null,
   subscriptionCancelAtPeriodEnd: false,
+  subscriptionCheckedAt: null,
 };
 
 describe("entitlement", () => {
@@ -66,5 +67,21 @@ describe("needsRefresh", () => {
     expect(needsRefresh({ ...customer, stripeSubscriptionId: "sub_1", subscriptionStatus: "canceled", subscriptionPeriodEnd: past }, now)).toBe(false);
     expect(needsRefresh(customer, now)).toBe(true); // trial over; checkout may have completed in a closed tab
     expect(needsRefresh(customer, new Date("2026-11-10T00:00:00Z"))).toBe(false);
+  });
+
+  it("refreshes subscriptions that are not entitled yet but could recover", () => {
+    const now = new Date("2026-12-01T00:00:00Z");
+    const future = new Date("2026-12-10T00:00:00Z");
+    for (const subscriptionStatus of ["incomplete", "past_due", "unpaid"]) {
+      const user = { ...base, stripeCustomerId: "cus_1", stripeSubscriptionId: "sub_1", subscriptionStatus, subscriptionPeriodEnd: future };
+      expect(needsRefresh(user, now), subscriptionStatus).toBe(true);
+    }
+  });
+
+  it("does not ask Stripe again within ten minutes of the last check", () => {
+    const now = new Date("2026-12-01T00:00:00Z");
+    const abandoned = { ...base, stripeCustomerId: "cus_1" }; // trial over, no subscription
+    expect(needsRefresh({ ...abandoned, subscriptionCheckedAt: new Date("2026-11-30T23:55:00Z") }, now)).toBe(false);
+    expect(needsRefresh({ ...abandoned, subscriptionCheckedAt: new Date("2026-11-30T23:49:00Z") }, now)).toBe(true);
   });
 });
