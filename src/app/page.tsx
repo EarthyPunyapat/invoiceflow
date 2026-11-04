@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { Logo } from "@/components/logo";
-import { InvoiceDemo } from "@/components/marketing/invoice-demo";
-import { SiteFooter } from "@/components/marketing/site-footer";
-import { Check, Plus, FileText, ArrowUpRight } from "lucide-react";
-import "./marketing.css";
+import { DocketBook } from "@/components/docket/docket-book";
+import { SiteFooter, SiteHeader } from "@/components/docket/site-chrome";
+import { docketFonts } from "@/components/docket/fonts";
+import "./docket.css";
+
 const questions = [
   {
     q: "How do I get started?",
@@ -22,184 +22,176 @@ const questions = [
     a: "Every account starts with a 14-day free trial, no card needed. After that, InvoiceFlow Pro is US$9 a month and you can cancel at any time. Stripe’s own processing fees apply when you accept a payment. Your existing invoices stay available and payable even if you stop subscribing.",
   },
 ];
+
+// The real path of an invoice, entered on the book's counterfoil.
+const counterfoil = [
+  {
+    serial: "0015",
+    step: "Write it",
+    detail: "Client, line items and tax, under your own name, logo and invoice numbering. Turn an estimate into an invoice when the work is agreed.",
+    mark: "Draft",
+  },
+  {
+    serial: "0016",
+    step: "Send it",
+    detail: "Email it from InvoiceFlow or share one link. Your client opens a clear invoice and needs no account.",
+    mark: "Sent",
+  },
+  {
+    serial: "0017",
+    step: "They pay by card",
+    detail: "Pay now opens Stripe Checkout. The money goes straight to your own Stripe account and the invoice marks itself paid.",
+    mark: "Paid",
+  },
+  {
+    serial: "0018",
+    step: "Late? It chases",
+    detail: "Reminders go out on their own for sent and overdue invoices, firmer each time, until the invoice is paid.",
+    mark: "Reminded",
+  },
+];
+
 export default function HomePage() {
   return (
-    <div className="marketing">
-      <header className="marketing-header">
-        <Link href="/" aria-label="InvoiceFlow home">
-          <Logo size={34} />
-        </Link>
-        <nav aria-label="Main navigation">
-          <a href="#product">The product</a>
-          <a href="#workflow">How it works</a>
-          <a href="#questions">Questions</a>
-        </nav>
-        <Link href="/login" className="marketing-signin">
-          Sign in <ArrowUpRight size={15} />
-        </Link>
-      </header>
+    <div className={`docket-site ${docketFonts}`}>
+      <SiteHeader sections />
       <main>
-        <section className="marketing-hero" id="product">
-          <div className="hero-introduction">
+        <section className="docket-hero" id="top">
+          <div className="hero-copy">
             <h1>
-              Good work.
+              Do the work.
               <br />
-              Paid for.
+              Tear. <span>Get paid.</span>
             </h1>
-            <div className="hero-copy">
-              <p>
-                Invoices, estimates and payments for the work you do. One clear
-                place to send an invoice and see where it stands.
-              </p>
-              <Link className="marketing-primary" href="/login">
-                Create your first invoice <Plus size={17} />
+            <p className="hero-lede">
+              Write the invoice, send it in one go, and your client pays by
+              card from the link. InvoiceFlow chases the late ones for you.
+            </p>
+            <div className="hero-actions">
+              <Link href="/login" className="stub-button">
+                Start free — 14 days
               </Link>
-              <span>Free for 14 days, then US$9/month.</span>
+              <p className="hero-price">Free for 14 days, then US$9/month.</p>
             </div>
+            <a href="#how-it-works" className="hero-secondary">
+              See how the money comes in
+            </a>
           </div>
-          <InvoiceDemo />
-        </section>
-        <section className="marketing-workflow" id="workflow">
-          <div>
-            <h2>
-              A clear path
-              <br />
-              to getting paid.
-            </h2>
-            <p>
-              Less time keeping track.
-              <br />
-              More time for the work itself.
-            </p>
-          </div>
-          <div className="workflow-list">
-            <article>
-              <h3>Start with the details.</h3>
-              <p>
-                Keep your clients, line items and tax together. Turn an estimate
-                into an invoice when the work is ready.
-              </p>
-              <span>Clients · Estimates · Invoices</span>
-            </article>
-            <article>
-              <h3>Send something clear.</h3>
-              <p>
-                Your branding, your payment terms, one public link. Email it to
-                your client or download a PDF.
-              </p>
-              <span>Public links · PDF export · Email</span>
-            </article>
-            <article>
-              <h3>Know where it stands.</h3>
-              <p>
-                See what’s paid, what’s waiting and what needs a follow-up. Keep
-                each currency’s totals separate.
-              </p>
-              <span>Payment tracking · Reminders · Reports</span>
-            </article>
+          <div className="hero-docket">
+            <DocketBook />
           </div>
         </section>
-        <section className="marketing-records">
-          <div className="records-copy">
-            <h2>
-              Your books.
-              <br />A little lighter.
-            </h2>
+
+        <section className="counterfoil-section" id="how-it-works" aria-labelledby="how-heading">
+          <div className="section-intro">
+            <h2 id="how-heading">How the money comes in.</h2>
             <p>
-              A proper record of your work, without another spreadsheet to
-              reconcile by hand.
+              Every invoice takes the same four steps. You do the first one.
+              InvoiceFlow handles the rest and keeps the record.
             </p>
-            <ul>
-              <li>
-                <Check size={17} /> Invoice numbers and totals, handled
+          </div>
+          <ol className="counterfoil">
+            {counterfoil.map((row) => (
+              <li key={row.serial}>
+                <span className="cf-serial">No. {row.serial}</span>
+                <h3>{row.step}</h3>
+                <p>{row.detail}</p>
+                <span className={`cf-mark is-${row.mark.toLowerCase()}`}>{row.mark}</span>
               </li>
-              <li>
-                <Check size={17} /> Clients and estimates in the same place
-              </li>
-              <li>
-                <Check size={17} /> A clear view of what’s still owed
-              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section className="carbon-section" aria-labelledby="carbon-heading">
+          <div className="carbon-copy-stack" aria-hidden="true">
+            <div className="filed-copy">
+              <span className="fc-serial">No. 0012</span>
+              <span className="fc-client">Linden Coffee</span>
+              <span className="fc-amount">$860.00</span>
+              <span className="fc-mark">Paid</span>
+            </div>
+            <div className="filed-copy">
+              <span className="fc-serial">No. 0013</span>
+              <span className="fc-client">Fieldwork Co.</span>
+              <span className="fc-amount">NZ$2,400.00</span>
+              <span className="fc-mark is-late">Overdue</span>
+            </div>
+            <div className="filed-copy">
+              <span className="fc-serial">No. 0014</span>
+              <span className="fc-client">Northstar Studio</span>
+              <span className="fc-amount">$1,472.00</span>
+              <span className="fc-mark">Sent</span>
+            </div>
+            <span className="filed-label">Example records</span>
+          </div>
+          <div className="carbon-copy-text">
+            <h2 id="carbon-heading">Keep the carbon.</h2>
+            <p>
+              The pink copies used to live in a shoebox. Here every invoice and
+              estimate stays filed, searchable and exportable.
+            </p>
+            <ul className="carbon-list">
+              <li>What’s paid, what’s waiting and what’s overdue, at a glance</li>
+              <li>Totals kept per currency, never blended into one</li>
+              <li>Any invoice as a PDF, your records as CSV for your accountant</li>
+              <li>Recurring work drafted for you on schedule</li>
             </ul>
-            <Link href="/login" className="marketing-text-link">
-              Open your workspace <ArrowUpRight size={17} />
-            </Link>
-          </div>
-          <div className="records-preview" data-ui>
-            <div className="records-preview-title">
-              <div>
-                <h3>Invoices</h3>
-                <p>Example workspace</p>
-              </div>
-              <FileText size={21} />
-            </div>
-            <div className="records-row">
-              <div>
-                <strong>INV-2026-012</strong>
-                <span>Northstar Studio</span>
-              </div>
-              <span className="sample-state sample-paid">Paid</span>
-              <strong>$1,472.00</strong>
-            </div>
-            <div className="records-row">
-              <div>
-                <strong>INV-2026-013</strong>
-                <span>Linden Coffee</span>
-              </div>
-              <span className="sample-state">Sent</span>
-              <strong>$860.00</strong>
-            </div>
-            <div className="records-row">
-              <div>
-                <strong>INV-2026-014</strong>
-                <span>Fieldwork Co.</span>
-              </div>
-              <span className="sample-state sample-draft">Draft</span>
-              <strong>$2,400.00</strong>
-            </div>
-            <p className="records-footnote">A place for the whole picture.</p>
           </div>
         </section>
-        <section className="marketing-faq" id="questions">
-          <div>
-            <h2>
-              A few things
+
+        <section className="price-section" id="price" aria-labelledby="price-heading">
+          <div className="price-slip">
+            <div className="perforation" aria-hidden="true" />
+            <h2 id="price-heading">
+              14 days free,
               <br />
-              worth knowing.
+              then US$9 a month.
             </h2>
-            <p>Simple answers before you start.</p>
+            <p className="price-sub">
+              One plan with everything in it. No card to start, cancel any time.
+            </p>
+            <ul className="price-includes">
+              <li>Clients, estimates and invoices</li>
+              <li>Card payments into your own Stripe account</li>
+              <li>Email delivery and share links</li>
+              <li>Automatic reminders and recurring drafts</li>
+              <li>PDF and CSV exports, reports per currency</li>
+            </ul>
+            <Link href="/login" className="stub-button">
+              Start free — 14 days
+            </Link>
+            <p className="price-fine">
+              Stripe’s processing fees apply to payments you receive. Invoices
+              you’ve sent stay payable even if you stop subscribing.
+            </p>
+            <span className="stamp stamp-price" aria-hidden="true">
+              No card needed
+            </span>
           </div>
-          <div>
+        </section>
+
+        <section className="faq-section" id="questions" aria-labelledby="faq-heading">
+          <h2 id="faq-heading">Before you start.</h2>
+          <div className="faq-list">
             {questions.map((question) => (
               <details key={question.q}>
-                <summary>
-                  {question.q}
-                  <Plus size={18} />
-                </summary>
+                <summary>{question.q}</summary>
                 <p>{question.a}</p>
               </details>
             ))}
           </div>
         </section>
-        <section className="marketing-close">
-          <h2>
-            Back to the
-            <br />
-            work you love.
-          </h2>
-          <div>
-            <p>
-              Give your invoices a home.
-              <br />
-              Get on with the good part.
-            </p>
-            <Link className="marketing-primary" href="/login">
-              Get started <ArrowUpRight size={17} />
-            </Link>
-          </div>
+
+        <section className="close-section" aria-labelledby="close-heading">
+          <h2 id="close-heading">Back to the work.</h2>
+          <p>Let the invoice book take care of itself.</p>
+          <Link href="/login" className="stub-button">
+            Start free — 14 days
+          </Link>
         </section>
       </main>
       <SiteFooter>
-        <a href="#product">Back to top</a>
+        <a href="#top">Back to top</a>
       </SiteFooter>
     </div>
   );
