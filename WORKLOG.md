@@ -1,3 +1,11 @@
+## Launch readiness (4 Nov 2026)
+
+InvoiceFlow Pro (US$9/month after a 14-day trial), legal pages, plan
+enforcement, health check and live verifier landed on
+`claude/wonderful-allen-tuk3yg`. Decisions: docs/superpowers/specs/2026-11-04-launch-readiness.md.
+Owner steps and the definition of "live": docs/LAUNCH_CHECKLIST.md
+(`node scripts/verify-live.mjs <origin>` must print `0 failed`).
+
 
 ## ★ SHIPPED (2026-11-02): InvoiceFlow agent SDK is LIVE on production
 
@@ -31,13 +39,9 @@ more valuable than features because they prevent duplicated money movement):
   - API keys are SHA-256 + 12-char prefix only -> unrecoverable, revoke & reissue
   - key can create a payable invoice; it cannot pay one
 
-**Deploy gotcha (solved, do not rediscover):**
-  `vercel` on PATH is a mise shim bound to node@26 while the active version is
-  node@22 -> "mise ERROR vercel is not provided by active node@22".
-  FIX: call the real binary directly:
-    ~/.local/share/mise/installs/node/26.12.0/bin/vercel deploy --prod --yes
-  Auth token already present at ~/.local/share/com.vercel.cli/auth.json.
-  `npx tsc --noEmit` is clean on node 22.
+**Releases (4 Nov 2026):** production deploys only by merging to `main`, which
+Vercel's GitHub integration builds (see AGENTS.md). Do not run `vercel deploy`
+from a sandbox: it skips CI and the release checks below.
 
 **Commits:** d4c68d0 (no-secret proof), f0a8310 (/sdk page + public assets).
 

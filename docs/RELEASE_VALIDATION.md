@@ -126,3 +126,25 @@ integration tests and 20 Chromium checks passed. The 36 billing tests also pass
 with one database connection. Browser provider HTTP is simulated at the SDK
 boundary; live delivery, real onboarding and payment completion remain separate
 production checks. See [DELIVERY_PAYMENTS.md](DELIVERY_PAYMENTS.md).
+
+## Launch readiness — 4 November 2026
+
+Branch `claude/wonderful-allen-tuk3yg` adds the InvoiceFlow Pro subscription
+(US$9/month after a 14-day trial), plan enforcement on create/send, privacy
+and terms pages, the release-gate fix for pending migrations, API-key invoice
+sharing, `/api/health`, generated sitemap/robots and `scripts/verify-live.mjs`.
+
+| Check | Result |
+|---|---|
+| ESLint and TypeScript | Passed |
+| Unit tests | 187 passed across 22 files |
+| Database integration tests | 91 passed across 9 files (local `invoiceflow_test`) |
+| Production build | Passed |
+| Chromium workflows | 27 passed |
+| Production dependency audit | No high/critical findings; one low advisory |
+| `verify-live.mjs` against the local production server | 11 checks passed; health correctly not ready without live Stripe, Google and email configuration |
+
+Stripe, Resend and Google are simulated at the HTTP boundary in tests. Live
+subscription checkout, Connect payments, email delivery and Google sign-in are
+verified by the owner's smoke test in [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md).
+
