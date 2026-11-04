@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="100%" height="100%">
-  <rect x="5" y="5" width="110" height="110" rx="16" fill="none" stroke="#c84b31" stroke-width="6" stroke-opacity="0.9"/>
-  <rect x="12" y="12" width="96" height="96" rx="10" fill="none" stroke="#c84b31" stroke-width="1.5" stroke-opacity="0.6"/>
-  <text x="60" y="48" font-family="'Shippori Mincho', 'Noto Serif JP', serif" font-weight="900" font-size="34" fill="#c84b31" text-anchor="middle" dominant-baseline="middle">零</text>
-  <text x="60" y="84" font-family="'Shippori Mincho', 'Noto Serif JP', serif" font-weight="900" font-size="28" fill="#c84b31" text-anchor="middle" dominant-baseline="middle">残</text>
-</svg>
