@@ -38,8 +38,19 @@ function appUrlIsHttps(): boolean {
   }
 }
 
+/** Domain of RESEND_FROM_EMAIL, which may be "Name <address>" or a bare address. */
+function senderDomain(): string {
+  const value = env("RESEND_FROM_EMAIL").toLowerCase();
+  const address = /<([^>]+)>/.exec(value)?.[1] ?? value;
+  return address.includes("@") ? address.slice(address.lastIndexOf("@") + 1).trim() : "";
+}
+
+// The .env.example placeholder, and Resend's shared testing sender, which only
+// delivers to the Resend account owner.
+const UNUSABLE_SENDER_DOMAINS = new Set(["yourdomain.com", "resend.dev"]);
+
 export function configChecks(): Omit<HealthChecks, "database" | "migrations" | "stripeChargesEnabled"> {
-  const sender = env("RESEND_FROM_EMAIL").toLowerCase();
+  const domain = senderDomain();
   return {
     appUrl: appUrlIsHttps(),
     authSecret: env("AUTH_SECRET").length >= 32 && env("AUTH_SECRET") !== PLACEHOLDER_SECRET,
@@ -47,7 +58,7 @@ export function configChecks(): Omit<HealthChecks, "database" | "migrations" | "
     stripeLiveKey: /^(sk|rk)_live_/.test(env("STRIPE_SECRET_KEY")),
     stripeWebhook: /^whsec_[A-Za-z0-9]{16,}$/.test(env("STRIPE_WEBHOOK_SECRET")),
     email: emailConfigured() && /^re_[A-Za-z0-9_]{16,}$/.test(env("RESEND_API_KEY")) &&
-      sender.includes("@") && !sender.endsWith("@yourdomain.com"),
+      domain.includes(".") && !UNUSABLE_SENDER_DOMAINS.has(domain),
     cron: env("CRON_SECRET").length >= 16 && env("CRON_SECRET") !== PLACEHOLDER_SECRET,
     supportEmail: supportEmail() !== null,
   };
