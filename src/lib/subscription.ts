@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
+import { isUnknownToStripe } from "@/lib/stripe-errors";
 import { stripeConfigured } from "@/lib/integration-config";
 import { appUrl } from "@/lib/app-url";
 import { entitlement, needsRefresh, PLAN_USER_SELECT, PRO_PLAN, type Entitlement, type PlanUser } from "@/lib/plan";
@@ -24,10 +25,6 @@ const CLEARED = {
   subscriptionCancelAtPeriodEnd: false,
 };
 
-/** Stripe says the object does not exist in this account and mode — not an outage. */
-function isMissing(error: unknown): boolean {
-  return (error as { code?: string } | null)?.code === "resource_missing";
-}
 
 async function markChecked(userId: string) {
   await prisma.user.update({ where: { id: userId }, data: { subscriptionCheckedAt: new Date() } });
@@ -68,7 +65,7 @@ export async function refreshSubscription(userId: string): Promise<void> {
       ? await stripe.subscriptions.retrieve(user.stripeSubscriptionId)
       : (await stripe.subscriptions.list({ customer: user.stripeCustomerId, status: "all", limit: 1 })).data[0];
   } catch (error) {
-    if (!isMissing(error)) throw error;
+    if (!isUnknownToStripe(error)) throw error;
     // IDs from another Stripe mode or account must never keep granting Pro.
     await prisma.user.update({ where: { id: userId }, data: { ...CLEARED, subscriptionCheckedAt: new Date() } });
     return;
@@ -146,7 +143,7 @@ export async function startCheckout(userId: string): Promise<BillingResult> {
   try {
     session = await create(customer);
   } catch (error) {
-    if (!isMissing(error)) throw error;
+    if (!isUnknownToStripe(error)) throw error;
     // The stored customer belongs to another Stripe mode or account: start over once.
     await prisma.user.update({ where: { id: userId }, data: CLEARED });
     session = await create(await ensureCustomer(userId, customer));

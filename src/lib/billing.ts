@@ -1,3 +1,4 @@
+import { isUnknownToStripe } from "./stripe-errors";
 import type { Prisma } from "@prisma/client";
 import type Stripe from "stripe";
 import { prisma } from "./prisma";
@@ -52,9 +53,19 @@ export async function createInvoiceCheckout(token: string) {
             "The issuer has not connected an online payment account. Contact them for payment instructions.",
         };
       // Reconcile with Stripe instead of permanently trusting a stale callback/webhook flag.
-      const remoteAccount = await stripe.accounts.retrieve(
-        account.stripeAccountId,
-      );
+      let remoteAccount;
+      try {
+        remoteAccount = await stripe.accounts.retrieve(account.stripeAccountId);
+      } catch (error) {
+        // Saved under other keys (e.g. test mode); the issuer must reconnect.
+        if (!isUnknownToStripe(error)) throw error;
+        return {
+          status: 503,
+          code: "STRIPE_NOT_CONNECTED",
+          error:
+            "The issuer has not connected an online payment account. Contact them for payment instructions.",
+        };
+      }
       const ready = canAcceptPayments(remoteAccount);
       if (account.stripeConnectOnboardingComplete !== ready)
         await tx.stripeAccount.update({
@@ -99,13 +110,16 @@ export async function createInvoiceCheckout(token: string) {
         return { url: remote.hosted_invoice_url };
       }
       if (invoice.checkoutSessionId) {
-        const existing = await stripe.checkout.sessions.retrieve(
-          invoice.checkoutSessionId,
-          { stripeAccount: account.stripeAccountId },
-        );
-        if (existing.status === "open" && existing.url)
+        // A session from other keys or a replaced account cannot be reused.
+        const existing = await stripe.checkout.sessions
+          .retrieve(invoice.checkoutSessionId, { stripeAccount: account.stripeAccountId })
+          .catch((error: unknown) => {
+            if (isUnknownToStripe(error)) return null;
+            throw error;
+          });
+        if (existing?.status === "open" && existing.url)
           return { url: existing.url };
-        if (existing.status === "complete")
+        if (existing?.status === "complete")
           return {
             status: 409,
             error: "Payment is processing. Please refresh the invoice shortly",
