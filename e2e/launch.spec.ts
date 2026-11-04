@@ -36,3 +36,25 @@ test("the landing page states the price", async ({ page }) => {
     ),
   ).toBeVisible();
 });
+
+test("search engines get a sitemap of public pages and stay out of the workspace", async ({ request }) => {
+  const sitemap = await (await request.get("/sitemap.xml")).text();
+  expect(sitemap).toContain("https://invoiceflow.example.test/privacy");
+  expect(sitemap).not.toContain("/dashboard");
+  const robots = await (await request.get("/robots.txt")).text();
+  expect(robots).toContain("Sitemap: https://invoiceflow.example.test/sitemap.xml");
+  expect(robots).toContain("Disallow: /api/");
+});
+
+test("the health endpoint reports readiness as named booleans only", async ({ request }) => {
+  const response = await request.get("/api/health");
+  expect(response.status()).toBe(200);
+  expect(response.headers()["cache-control"]).toContain("no-store");
+  const body = await response.json();
+  expect(typeof body.ready).toBe("boolean");
+  expect(Object.keys(body.checks).sort()).toEqual([
+    "appUrl", "authSecret", "cron", "database", "email", "googleSignIn", "migrations",
+    "stripeChargesEnabled", "stripeLiveKey", "stripeWebhook", "supportEmail",
+  ]);
+  for (const value of Object.values(body.checks)) expect(typeof value).toBe("boolean");
+});

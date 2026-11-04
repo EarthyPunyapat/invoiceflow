@@ -1,6 +1,0 @@
-User-agent: *
-Allow: /
-
-# Agent entry points
-# https://invoiceflow-ten-azure.vercel.app/llms.txt
-Sitemap: https://invoiceflow-ten-azure.vercel.app/sitemap.xml
