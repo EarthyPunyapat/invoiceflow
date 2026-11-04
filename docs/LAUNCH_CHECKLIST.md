@@ -98,6 +98,9 @@ Turns green: `googleSignIn` (configuration). Real sign-in is confirmed in O8.
 ## O7. Email to your customers' clients (needs a domain)
 
 Resend only delivers to arbitrary recipients from a domain you have verified.
+Its shared testing sender (`onboarding@resend.dev`) only reaches your own Resend
+account address, so the `email` health check stays red until the sender is on
+your own domain.
 Until this step is done, invoices can still be shared by link, and the app
 explains why email is unavailable.
 

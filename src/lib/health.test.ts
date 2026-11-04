@@ -53,4 +53,13 @@ describe("health configuration checks", () => {
       stripeWebhook: true, email: true, cron: true, supportEmail: true,
     });
   });
+
+  it("Resend's shared testing sender is not ready for customers", () => {
+    // onboarding@resend.dev can only deliver to the Resend account owner, so
+    // invoices to clients would fail while the owner's own test email works.
+    vi.stubEnv("RESEND_API_KEY", "re_" + "x".repeat(24));
+    vi.stubEnv("RESEND_FROM_EMAIL", "InvoiceFlow <onboarding@resend.dev>");
+    expect(configChecks().email).toBe(false);
+  });
 });
+
