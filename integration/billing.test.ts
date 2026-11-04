@@ -283,6 +283,18 @@ describe("invoice billing journey", () => {
     expect(res.status).toBe(400);
     expect(mocks.send).not.toHaveBeenCalled();
   });
+  it("ignores subscription Checkout events delivered to the payment webhook", async () => {
+    // An "account"-type endpoint also receives the platform's own InvoiceFlow
+    // Pro checkouts. Failing them would make Stripe retry and disable the endpoint.
+    const inv = await invoice();
+    const res = await signedEvent(
+      "checkout.session.completed",
+      { id: "cs_subscription", mode: "subscription", payment_status: "paid", client_reference_id: mocks.userId, customer: "cus_fixture" },
+      null as unknown as string,
+    );
+    expect(res.status).toBe(200);
+    expect((await prisma.invoice.findUniqueOrThrow({ where: { id: inv.id } })).status).toBe("SENT");
+  });
   it("allocates unique estimate numbers under concurrent creation", async () => {
     const body = {
       clientId,
