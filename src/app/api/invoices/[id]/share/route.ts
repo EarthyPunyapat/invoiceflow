@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireUser } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { ensureShareToken } from "@/lib/invoice-share";
 import { appUrl } from "@/lib/app-url";
@@ -13,12 +13,12 @@ export async function POST(
 ) {
   const params = await paramsPromise;
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    // Browser session or API key: an agent that can read an invoice may also
+    // fetch its public payment link (spec D9). Sending email stays session-only.
+    const userId = await requireUser(req);
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const userId = session.user.id;
 
     const invoice = await prisma.invoice.findFirst({
       where: { id: params.id, userId },

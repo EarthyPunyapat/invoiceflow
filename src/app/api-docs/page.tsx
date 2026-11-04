@@ -26,13 +26,14 @@ const canDo = [
   ["GET", "/api/dashboard/stats", "aggregate totals"],
   ["GET", "/api/export/invoices", "CSV export"],
   ["GET", "/api/export/clients", "CSV export"],
+  ["POST", "/api/invoices/{id}/share", "public payment link for a SENT or OVERDUE invoice"],
 ];
 
 const cantDo = [
   "POST /api/keys — a key cannot mint another key",
   "DELETE /api/keys/{id} — revocation is human-only",
   "POST /api/invoices/{id}/send — sends email, session only",
-  "POST /api/invoices/{id}/share — mints a public link, session only",
+  "/api/billing/* — buying or managing a plan is human-only",
   "/api/stripe/connect — binds a payment account to a human",
 ];
 
