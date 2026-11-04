@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { InvoiceDemo } from "@/components/marketing/invoice-demo";
+import { SiteFooter } from "@/components/marketing/site-footer";
 import { Check, Plus, FileText, ArrowUpRight } from "lucide-react";
 import "./marketing.css";
 const questions = [
@@ -197,14 +198,9 @@ export default function HomePage() {
           </div>
         </section>
       </main>
-      <footer className="marketing-footer">
-        <Logo size={32} />
-        <p>Made for the work you do.</p>
-        <nav className="marketing-footer-links" aria-label="Footer">
-          <Link href="/api-docs">API for agents</Link>
-          <a href="#product">Back to top</a>
-        </nav>
-      </footer>
+      <SiteFooter>
+        <a href="#product">Back to top</a>
+      </SiteFooter>
     </div>
   );
 }
