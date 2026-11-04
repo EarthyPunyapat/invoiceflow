@@ -1,5 +1,10 @@
 import { getPaymentReadiness } from "@/lib/stripe-account";
-import { emailConfigured } from "@/lib/integration-config";
+import { emailConfigured, stripeConfigured } from "@/lib/integration-config";
+import { completeCheckout, getEntitlement } from "@/lib/subscription";
+import { PRO_PLAN } from "@/lib/plan";
+import { PAYMENT_FAILED_MESSAGE, TRIAL_ENDED_MESSAGE } from "@/lib/plan-guard";
+import { formatDate } from "@/lib/utils";
+import { PlanSection } from "./plan-section";
 import { RefreshIntegrations } from "./refresh-integrations";
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
@@ -13,9 +18,21 @@ export const metadata: Metadata = {
   title: "Settings",
 };
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ billing?: string; session_id?: string }>;
+}) {
   const session = await auth();
   if (!session?.user?.id) return null;
+
+  // Returning from Stripe: record the subscription before reading the plan.
+  const { billing, session_id: checkoutSessionId } = await searchParams;
+  if (billing === "success" && checkoutSessionId) {
+    await completeCheckout(session.user.id, checkoutSessionId);
+  }
+  const plan = await getEntitlement(session.user.id, { refresh: billing === "portal" });
+  const notice = billing === "success" || billing === "cancelled" || billing === "portal" ? billing : null;
 
   // Check if user has connected Stripe + load their business profile
   const [payment, profile] = await Promise.all([
@@ -50,6 +67,21 @@ export default async function SettingsPage() {
           Manage your account settings and preferences
         </p>
       </div>
+
+      <PlanSection
+        plan={{
+          state: plan.state,
+          trialDaysLeft: plan.trialDaysLeft,
+          trialEnds: formatDate(plan.trialEndsAt),
+          activeUntil: plan.activeUntil ? formatDate(plan.activeUntil) : null,
+          cancelsAtPeriodEnd: plan.cancelsAtPeriodEnd,
+        }}
+        priceLabel={PRO_PLAN.label}
+        trialEndedMessage={TRIAL_ENDED_MESSAGE}
+        paymentFailedMessage={PAYMENT_FAILED_MESSAGE}
+        billingReady={stripeConfigured()}
+        notice={notice}
+      />
 
       {/* User info card */}
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
@@ -185,11 +217,10 @@ export default async function SettingsPage() {
       </section>
       <ApiKeysManager />
       <section className="rounded-xl bg-gray-50 p-6">
-        <h2 className="text-sm font-semibold">Early access</h2>
+        <h2 className="text-sm font-semibold">Account</h2>
         <p className="mt-2 text-sm leading-relaxed text-gray-600">
-          InvoiceFlow is free to use during early access. Subscription billing
-          is not available yet. Payments you collect through Stripe are separate
-          from your access to InvoiceFlow.
+          Payments your clients make through Stripe go to your own Stripe
+          account and are separate from your InvoiceFlow subscription.
         </p>
         <p className="mt-3 text-sm leading-relaxed text-gray-600">
           Your Google account manages your sign-in credentials and account

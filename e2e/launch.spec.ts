@@ -25,3 +25,14 @@ test("legal pages are public, linked from the site and sign-in, and show the sup
   await expect(page.getByRole("link", { name: "Terms", exact: true })).toHaveAttribute("href", "/terms");
   await expect(page.getByRole("link", { name: "Privacy Policy" })).toHaveAttribute("href", "/privacy");
 });
+
+test("the landing page states the price", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByText("Free for 14 days, then US$9/month.")).toBeVisible();
+  await page.getByText("What does it cost?").click();
+  await expect(
+    page.getByText(
+      "Every account starts with a 14-day free trial, no card needed. After that, InvoiceFlow Pro is US$9 a month and you can cancel at any time. Stripe’s own processing fees apply when you accept a payment. Your existing invoices stay available and payable even if you stop subscribing.",
+    ),
+  ).toBeVisible();
+});
