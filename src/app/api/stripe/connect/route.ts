@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import { isUnknownToStripe } from "@/lib/stripe-errors";
 
 export const dynamic = "force-dynamic";
 
@@ -26,16 +27,54 @@ export async function GET(req: NextRequest) {
         { status: 503 },
       );
 
-    // Check if user already has a Stripe account
+    const stripe = getStripe();
+    // Replaces the saved account when `replacing` is given: an account Stripe
+    // does not know under the current keys (e.g. created with test keys).
+    const createAccount = async (replacing?: string) => {
+      const country = process.env.STRIPE_CONNECT_COUNTRY?.trim();
+      const account = await stripe.accounts.create(
+        {
+          type: "express",
+          // Without a configured country Stripe uses the platform's own.
+          ...(country ? { country } : {}),
+          metadata: { invoiceFlowUserId: userId },
+          email: session.user!.email ?? undefined,
+          capabilities: {
+            card_payments: { requested: true },
+            transfers: { requested: true },
+          },
+        },
+        { idempotencyKey: replacing ? `connect-account:${userId}:after:${replacing}` : `connect-account:${userId}` },
+      );
+      return prisma.stripeAccount.upsert({
+        where: { userId },
+        // A concurrent first request keeps whichever account was saved first.
+        update: replacing ? { stripeAccountId: account.id, stripeConnectOnboardingComplete: false } : {},
+        create: { userId, stripeAccountId: account.id, stripeConnectOnboardingComplete: false },
+      });
+    };
+    const onboardingLink = (account: string) =>
+      stripe.accountLinks.create({
+        account,
+        refresh_url: `${appUrl()}/api/stripe/connect/callback?refresh=true`,
+        return_url: `${appUrl()}/api/stripe/connect/callback?success=true`,
+        type: "account_onboarding",
+      });
+
     let stripeAccount = await prisma.stripeAccount.findUnique({
       where: { userId },
     });
 
     if (stripeAccount?.stripeConnectOnboardingComplete) {
-      const current = await getStripe().accounts.retrieve(
-        stripeAccount.stripeAccountId,
-      );
-      if (canAcceptPayments(current))
+      const current = await stripe.accounts
+        .retrieve(stripeAccount.stripeAccountId)
+        .catch((error: unknown) => {
+          if (isUnknownToStripe(error)) return null;
+          throw error;
+        });
+      if (!current) {
+        stripeAccount = await createAccount(stripeAccount.stripeAccountId);
+      } else if (canAcceptPayments(current)) {
         return NextResponse.json(
           {
             error:
@@ -43,47 +82,24 @@ export async function GET(req: NextRequest) {
           },
           { status: 409 },
         );
-      await prisma.stripeAccount.update({
-        where: { userId },
-        data: { stripeConnectOnboardingComplete: false },
-      });
+      } else {
+        await prisma.stripeAccount.update({
+          where: { userId },
+          data: { stripeConnectOnboardingComplete: false },
+        });
+      }
     }
 
-    // Create Stripe Connect account if not exists
-    const stripe = getStripe();
-    if (!stripeAccount) {
-      const account = await stripe.accounts.create(
-        {
-          type: "express",
-          country: process.env.STRIPE_CONNECT_COUNTRY || "US",
-          metadata: { invoiceFlowUserId: userId },
-          email: session.user.email ?? undefined,
-          capabilities: {
-            card_payments: { requested: true },
-            transfers: { requested: true },
-          },
-        },
-        { idempotencyKey: `connect-account:${userId}` },
-      );
+    if (!stripeAccount) stripeAccount = await createAccount();
 
-      stripeAccount = await prisma.stripeAccount.upsert({
-        where: { userId },
-        update: {},
-        create: {
-          userId,
-          stripeAccountId: account.id,
-          stripeConnectOnboardingComplete: false,
-        },
-      });
+    let accountLink;
+    try {
+      accountLink = await onboardingLink(stripeAccount.stripeAccountId);
+    } catch (error) {
+      if (!isUnknownToStripe(error)) throw error;
+      stripeAccount = await createAccount(stripeAccount.stripeAccountId);
+      accountLink = await onboardingLink(stripeAccount.stripeAccountId);
     }
-
-    // Create account link for onboarding
-    const accountLink = await stripe.accountLinks.create({
-      account: stripeAccount.stripeAccountId,
-      refresh_url: `${appUrl()}/api/stripe/connect/callback?refresh=true`,
-      return_url: `${appUrl()}/api/stripe/connect/callback?success=true`,
-      type: "account_onboarding",
-    });
 
     return NextResponse.json({ url: accountLink.url });
   } catch (error) {

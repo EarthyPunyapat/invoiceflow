@@ -71,6 +71,11 @@ In the Stripe Dashboard, with **Test mode switched off**:
 4. **Copy the live secret key.** Developers → API keys → Secret key (`sk_live_…`) into Vercel as `STRIPE_SECRET_KEY`.
 5. Redeploy (see O4).
 
+Users' Express accounts are created in your Stripe account's country (New
+Zealand). Set `STRIPE_CONNECT_COUNTRY` only to override that. Accounts and
+Checkout sessions saved under the test keys are replaced automatically: anyone
+who connected Stripe before the switch sees **Connect** again in Settings.
+
 You don't need to create a product or price for InvoiceFlow Pro. Checkout
 creates the US$9/month price itself, and the billing portal configuration is
 created on first use.

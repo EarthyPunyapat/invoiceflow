@@ -2,6 +2,7 @@ import type Stripe from "stripe";
 import { prisma } from "./prisma";
 import { getStripe } from "./stripe";
 import { stripeConfigured } from "./integration-config";
+import { isUnknownToStripe } from "./stripe-errors";
 
 export const canAcceptPayments = (
   account: Pick<Stripe.Account, "charges_enabled" | "details_submitted">,
@@ -55,7 +56,16 @@ export async function getPaymentReadiness(
         : "Finish the required details in Stripe before clients can pay online.",
       country: account.country,
     };
-  } catch {
+  } catch (error) {
+    if (isUnknownToStripe(error)) {
+      // e.g. a test-mode account after live keys were configured: let the
+      // owner connect a new account instead of being stuck on this one.
+      await prisma.stripeAccount.deleteMany({ where: { userId, stripeAccountId: saved.stripeAccountId } });
+      return {
+        state: "not_connected",
+        message: "Connect your Stripe account to accept online invoice payments.",
+      };
+    }
     return {
       state: "unavailable",
       message:

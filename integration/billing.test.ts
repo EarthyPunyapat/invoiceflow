@@ -705,6 +705,26 @@ describe("delivery and payment readiness regressions", () => {
     expect(result.code).toBe("STRIPE_NOT_CONNECTED");
     expect(mocks.create).not.toHaveBeenCalled();
   });
+  it("explains that online payment is unavailable while the issuer's saved account belongs to another Stripe mode", async () => {
+    const inv = await invoice();
+    mocks.accountRetrieve.mockRejectedValueOnce(
+      new Stripe.errors.StripePermissionError({ type: "invalid_request_error", code: "account_invalid", message: "No access to account" }),
+    );
+    const result = await createInvoiceCheckout(await ensureShareToken(inv.id));
+    expect(result.status).toBe(503);
+    expect(result.code).toBe("STRIPE_NOT_CONNECTED");
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+  it("starts a new Checkout when the saved session belongs to another Stripe mode", async () => {
+    const inv = await invoice();
+    await prisma.invoice.update({ where: { id: inv.id }, data: { checkoutSessionId: "cs_test_old", checkoutAttempt: 1 } });
+    mocks.retrieve.mockRejectedValueOnce(
+      new Stripe.errors.StripeInvalidRequestError({ type: "invalid_request_error", code: "resource_missing", message: "No such checkout.session" }),
+    );
+    const result = await createInvoiceCheckout(await ensureShareToken(inv.id));
+    expect(result).toEqual({ url: "https://checkout.stripe.com/fixture" });
+    expect(mocks.create).toHaveBeenCalledTimes(1);
+  });
   it("reports missing deployment Stripe configuration through the public API", async () => {
     const inv = await invoice();
     const token = await ensureShareToken(inv.id);
