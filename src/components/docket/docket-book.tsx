@@ -40,7 +40,18 @@ export function DocketBook() {
   const billTo = client.trim() || "Your client";
   const forWork = work.trim() || "The work";
 
-  const focusNext = () => requestAnimationFrame(() => nextControl.current?.focus());
+  // Each step's next control appears where the last one was, so moving focus
+  // must not scroll the page. Only nudge it if the control is off-screen.
+  // The control is looked up after the next paint, once React has rendered it.
+  const focusInPlace = (find: () => HTMLElement | null) =>
+    requestAnimationFrame(() => {
+      const element = find();
+      if (!element) return;
+      element.focus({ preventScroll: true });
+      const { top, bottom } = element.getBoundingClientRect();
+      if (top < 0 || bottom > window.innerHeight) element.scrollIntoView({ block: "nearest" });
+    });
+  const focusNext = () => focusInPlace(() => nextControl.current);
 
   function send() {
     setStage("sent");
@@ -57,7 +68,7 @@ export function DocketBook() {
     setStage("draft");
     setPaidOn("");
     setAnnouncement("A fresh top copy is ready.");
-    requestAnimationFrame(() => document.getElementById(`${id}-client`)?.focus());
+    focusInPlace(() => document.getElementById(`${id}-client`));
   }
 
   const lines = (
@@ -107,6 +118,19 @@ export function DocketBook() {
           <p className="ply-copy-note">Customer copy kept in book</p>
           {lines}
           {totals}
+          {/* Sits where the top copy's tear button was, so each next step is under the pointer. */}
+          <div className="ply-next">
+            {stage === "sent" && (
+              <button ref={nextControl} type="button" className="docket-action" onClick={pay}>
+                Client pays by card
+              </button>
+            )}
+            {stage === "paid" && (
+              <button ref={nextControl} type="button" className="docket-action is-quiet" onClick={reset}>
+                Write another
+              </button>
+            )}
+          </div>
           <p className="ply-carbon-strip" aria-hidden="true">
             <span>Carbon copy</span>
             <span>Amount due {formatCurrency(total)}</span>
@@ -185,16 +209,6 @@ export function DocketBook() {
 
       <div className="docket-controls">
         <p className="docket-example">Example invoice. Nothing is sent or charged.</p>
-        {stage === "sent" && (
-          <button ref={nextControl} type="button" className="docket-action" onClick={pay}>
-            Client pays by card
-          </button>
-        )}
-        {stage === "paid" && (
-          <button ref={nextControl} type="button" className="docket-action is-quiet" onClick={reset}>
-            Write another
-          </button>
-        )}
       </div>
       <p className="sr-only" role="status" aria-live="polite">
         {announcement}

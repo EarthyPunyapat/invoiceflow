@@ -25,7 +25,7 @@ colors:
 typography:
   display:
     fontFamily: "Archivo, system-ui, sans-serif"
-    fontSize: "clamp(3.1rem, 6.3vw, 6rem)"
+    fontSize: "clamp(3.1rem, 6.3vw, 5.6rem)"
     fontWeight: 800
     lineHeight: 0.93
     letterSpacing: "-0.035em"
@@ -152,7 +152,7 @@ Restrained-but-saturated: the paper plies are full-strength colour fields, and e
 Two faces, both self-hosted through `next/font` and scoped to public pages: **Archivo** (variable width) for anything printed on the form, **Courier Prime** for anything typed onto it. The app keeps Manrope.
 
 ### Hierarchy
-- **Display** — hero headline, Archivo 800 at 86% width, `clamp(3.1rem, 6.3vw, 6rem)`, line-height 0.93, tracking −0.035em.
+- **Display** — hero headline, Archivo 800 at 86% width, `clamp(3.1rem, 6.3vw, 5.6rem)`, line-height 0.93, tracking −0.035em.
 - **Heading** — section headlines, Archivo 800 at 88% width, `clamp(2.2rem, 4.4vw, 3.9rem)`.
 - **Form header** — "TAX INVOICE", "INVOICE": Archivo 800 at 125% width, uppercase, +0.04em. Lives on the paper object, never above a page heading.
 - **Label** — field labels, 12–12.5px Archivo 700 uppercase, +0.05em.
@@ -197,7 +197,7 @@ Paper corners at 4px; the binding's top corners at 6px. Perforations are rows of
 - Header: carbon-blue wordmark (document mark plus Archivo 800), section anchors, Sign in, small stub. Footer on a carbon rule.
 
 ### Docket (signature component)
-- Binding strip, three plies stacked in one grid cell (pink stretches, canary carries extra blank paper for stamps, top copy editable), perforation along the top, form header and serial, typed fields, totals with a double rule. States: draft → sent (top copy lifts off along the perforation, 420ms, leaving a torn stub) → paid (stamp lands 1.25→1, 220ms). Each step moves focus to the next control and is announced in a live region; reduced motion makes every change instant.
+- Binding strip, three plies stacked in one grid cell (pink stretches, canary carries extra blank paper for stamps, top copy editable), perforation along the top, form header and serial, typed fields, totals with a double rule. States: draft → sent (top copy lifts off along the perforation, 420ms, leaving a torn stub) → paid (stamp lands 1.25→1, 220ms). The canary copy's action row sits where the top copy's tear button was, so each next step ("Client pays by card", then "Write another") appears under the pointer; stamps land in the blank paper below it. Each step moves focus to the next control without scrolling the page (it only nudges the page if that control is off-screen) and is announced in a live region; reduced motion makes every change instant.
 
 ### Rubber stamp
 - Double-ruled red box, Archivo 800 at 122% width, multiply blend, ink texture from a noise mask, slight tilt.

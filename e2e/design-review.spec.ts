@@ -207,6 +207,42 @@ test("the example docket and FAQ respond to keyboard input with reduced motion",
   await expect(page).toHaveURL(/\/login$/);
 });
 
+test("the example docket keeps the page still and puts each next step where you clicked", async ({
+  page,
+  ownerId,
+}) => {
+  expect(ownerId).toBeTruthy();
+  await page.context().clearCookies();
+  // A common laptop viewport (1920×1080 at 125% scaling), where the docket
+  // reaches the bottom of the first screen.
+  await page.setViewportSize({ width: 1536, height: 730 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  const scrollY = () => page.evaluate(() => window.scrollY);
+  const tear = page.getByRole("button", { name: "Tear off & send" });
+  const tearBox = await tear.boundingBox();
+  expect(tearBox).not.toBeNull();
+  const start = await scrollY();
+
+  await tear.click();
+  const pay = page.getByRole("button", { name: "Client pays by card" });
+  await expect(pay).toBeFocused();
+  expect(await scrollY()).toBe(start);
+  await expect(pay).toBeInViewport({ ratio: 1 });
+  const payBox = await pay.boundingBox();
+  expect(Math.abs(payBox!.y - tearBox!.y)).toBeLessThan(48);
+
+  await pay.click();
+  const another = page.getByRole("button", { name: "Write another" });
+  await expect(another).toBeFocused();
+  expect(await scrollY()).toBe(start);
+  await expect(another).toBeInViewport({ ratio: 1 });
+
+  await another.click();
+  await expect(page.getByLabel("Bill to")).toBeFocused();
+  expect(await scrollY()).toBe(start);
+});
+
 test("mobile navigation opens, closes on Escape, routes to clients and signs out", async ({
   page,
   ownerId,
