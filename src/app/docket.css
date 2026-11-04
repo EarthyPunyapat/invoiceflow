@@ -181,7 +181,7 @@
   padding-block: clamp(48px, 7vw, 96px) clamp(56px, 8vw, 110px);
 }
 .hero-copy h1 {
-  font-size: clamp(3.1rem, 6.3vw, 6rem);
+  font-size: clamp(3.1rem, 6.3vw, 5.6rem);
   line-height: 0.93;
   font-weight: 800;
   font-stretch: 86%;
@@ -266,7 +266,7 @@
   box-shadow: 0 10px 28px rgba(31, 43, 112, 0.18);
 }
 .ply-canary {
-  padding-bottom: 172px;
+  padding-bottom: 118px;
   background-color: var(--canary);
   color: var(--carbon);
   transform: translate(10px, 12px) rotate(1deg);
@@ -493,13 +493,14 @@
   transform: scale(1.25) rotate(-14deg);
   transition: opacity 220ms var(--ease-out), transform 220ms var(--ease-out);
 }
+/* Stamps land in the blank paper under the action row, clear of every figure. */
 .stamp-sent {
   right: 6%;
-  bottom: 74px;
+  bottom: 22px;
 }
 .stamp-paid {
-  right: 24%;
-  bottom: 14px;
+  right: 50%;
+  bottom: 16px;
 }
 .docket[data-stage="sent"] .stamp-sent,
 .docket[data-stage="paid"] .stamp-sent {
@@ -511,13 +512,17 @@
   transform: scale(1) rotate(-6deg);
 }
 .docket-controls {
+  margin: 30px 6px 0;
+}
+/* The canary copy's action row lines up with the top copy's tear button. */
+.ply-next {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px 18px;
-  min-height: 52px;
-  margin: 44px 6px 0;
+  min-height: 48px;
+  margin-top: 22px;
+}
+.ply-next .docket-action {
+  flex: 1;
+  min-height: 48px;
 }
 .ply-carbon-strip {
   position: absolute;
