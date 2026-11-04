@@ -10,7 +10,7 @@
     "db:seed": "prisma db seed",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
-    "lint": "eslint src integration e2e test-support scripts/preview-invoice-pdf.ts scripts/browser-providers.mjs scripts/prepare-production-db.mjs --ext .ts,.tsx,.mjs --max-warnings 0",
+    "lint": "eslint src integration e2e test-support scripts/preview-invoice-pdf.ts scripts/browser-providers.mjs scripts/prepare-production-db.mjs scripts/verify-live.mjs --ext .ts,.tsx,.mjs --max-warnings 0",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "next typegen && tsc --noEmit --incremental false",

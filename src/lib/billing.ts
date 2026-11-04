@@ -162,6 +162,9 @@ export async function recordCheckoutPayment(
   accountId?: string,
 ) {
   if (session.payment_status !== "paid") return null;
+  // InvoiceFlow Pro checkouts belong to the platform, not to an invoice; they
+  // are synced by src/lib/subscription.ts. Never fail the webhook over them.
+  if (session.mode === "subscription") return null;
   const invoiceId = session.client_reference_id;
   if (!accountId || !invoiceId)
     throw new Error(

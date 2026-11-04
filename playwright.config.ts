@@ -35,6 +35,7 @@ export default defineConfig({
       NEXT_PUBLIC_APP_URL: "https://invoiceflow.example.test",
       RESEND_API_KEY: "re_browser_fixture",
       RESEND_FROM_EMAIL: "billing@example.test",
+      SUPPORT_EMAIL: "support@example.test",
       STRIPE_SECRET_KEY: "sk_test_browser_fixture",
       INVOICEFLOW_TEST_PROVIDERS: "true",
       INVOICEFLOW_PROVIDER_LOG: process.env.INVOICEFLOW_PROVIDER_LOG,

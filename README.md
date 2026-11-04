@@ -5,7 +5,7 @@
 
 # InvoiceFlow
 
-**Professional invoices, Stripe payment links, reminders, and currency-safe reporting. Early access.**
+**Professional invoices, Stripe payment links, reminders, and currency-safe reporting. 14 days free, then US$9/month.**
 
 [![Live Demo](https://img.shields.io/badge/Demo-invoiceflow--ten--azure.vercel.app-245b45?style=flat-square&logo=vercel&logoColor=white)](https://invoiceflow-ten-azure.vercel.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT)
@@ -94,7 +94,7 @@ node test-mcp.mjs     # 14 passed, 0 failed — no key, no network
 | Reports and exports | Revenue, outstanding balances, aging, client reports and CSV export |
 | Business profile | Name, address, logo, accent color and invoice numbering prefix |
 
-The app offers early access. Subscription purchases and plan enforcement are not implemented. Invoice payments are separate from billing users for access to InvoiceFlow.
+Every account starts with a 14-day free trial; InvoiceFlow Pro then costs US$9/month through Stripe Checkout, with card changes and cancellation in the Stripe billing portal. After the trial, creating and sending invoices requires an active subscription; existing records, PDFs, exports and clients' payments stay available. Invoice payments go to each user's own Stripe account and are separate from their InvoiceFlow subscription. Decisions are recorded in [the launch spec](docs/superpowers/specs/2026-11-04-launch-readiness.md).
 
 ## Interface and design guidance
 
@@ -228,7 +228,7 @@ Both jobs use `GET` and require `Authorization: Bearer <CRON_SECRET>`:
 - Public payment IP throttling is in memory and therefore best effort across Vercel instances. A distributed rate limiter is needed for a larger deployment.
 - Payment confirmation email currently goes to the invoice owner, not a separate customer receipt workflow.
 - Recurring jobs create drafts; they do not automatically send them or charge stored payment methods.
-- Invoice/subscription accounting, refunds, partial payments and SaaS plan billing require separate product work.
+- Refunds, partial invoice payments and per-invoice accounting require separate product work. InvoiceFlow Pro has one monthly plan; there are no annual plans, coupons or team seats.
 
 ## Architecture
 

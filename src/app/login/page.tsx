@@ -76,7 +76,16 @@ export default async function LoginPage() {
             </button>
           </form>
           <p className="mt-5 text-center text-xs leading-6 text-gray-500">
-            New here? Your workspace is created when you sign in.
+            New here? Your workspace is created when you sign in, with 14 days
+            free. By continuing you agree to the{" "}
+            <Link href="/terms" className="underline underline-offset-2">
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="underline underline-offset-2">
+              Privacy Policy
+            </Link>
+            .
           </p>
           <Link
             href="/"

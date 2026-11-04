@@ -12,6 +12,8 @@ In Vercel, import the repository, select the Next.js preset and Node.js 22, and 
 
 Production Vercel builds generate Prisma Client, run the guarded database preparation step, and then build Next.js. This prevents code from deploying ahead of its required columns. The preparation step uses `DATABASE_URL_UNPOOLED`, serializes concurrent releases, and applies committed migrations. It never resets or deletes application data.
 
+A database already released by this app may have newer committed migrations pending; the gate applies them in order and then verifies the result against `prisma/schema.prisma`. It stops before changing anything when the history has a gap, contains another application's migrations, or records an unfinished migration. It also stops when the pending changes are already present but unrecorded, which happens when a migration's SQL was run by hand. In that case confirm the schema, record each migration with `pnpm exec prisma migrate resolve --applied <name>` against the direct URL, and redeploy.
+
 For a legacy database created with `db push`, automatic baselining is allowed only when the database exactly matches the committed baseline and has no conflicting invoice numbers or unknown migration history. Drift or missing configuration stops the build with an actionable error. Review and back up existing databases before release; the manual baseline procedure below remains available when automated validation refuses the schema.
 
 Local and preview builds do not automatically migrate databases. Prepare an isolated preview database explicitly before using a preview deployment.
@@ -42,7 +44,7 @@ Changing Vercel variables requires a deployment that receives those settings. Re
 
 ## 3. Migrate the database
 
-Take and verify a recoverable backup or Neon recovery point before changing an existing production database. Review both SQL files in `prisma/migrations` and rehearse the procedure on an isolated copy first.
+Take and verify a recoverable backup or Neon recovery point before changing an existing production database. Review every SQL file in `prisma/migrations` and rehearse the procedure on an isolated copy first.
 
 ### Empty database
 
@@ -55,7 +57,7 @@ pnpm run db:deploy
 pnpm exec prisma migrate status
 ```
 
-This applies the baseline followed by the billing-safety migration. Both connection strings must identify the intended database; do not rely on a shell left over from a different environment.
+This applies the baseline followed by every later committed migration (billing safety, then API keys). Both connection strings must identify the intended database; do not rely on a shell left over from a different environment.
 
 ### Existing database without migration history
 

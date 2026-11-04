@@ -72,7 +72,7 @@ Buttons and controls have 6px radii; content sheets use 10px. Invoice states use
 - Navigation: native dialog supplies focus containment and Escape; sign-out goes through Auth.js rather than a raw request missing CSRF.
 - Marketing invoice: Draft/Sent/Paid buttons expose aria-pressed. Totals are computed from visible line items and tax. Every demonstration is labeled as an example.
 - Motion: invoice state feedback responds to visitors; app navigation is immediate. Controls use 140–180ms feedback with an ease-out curve. Respect reduced motion and never hide content pending entrance JavaScript.
-- Settings: real business-profile and Stripe actions, followed by an honest early-access explanation. No dead upgrade or placeholder settings links.
+- Settings: the plan comes first (trial days left, Pro renewal or end date, payment failure) with one real Subscribe or Manage billing action, then business profile and Stripe actions. No dead upgrade or placeholder settings links. The workspace shows a single plan notice only when the trial has three days or fewer left, has ended, or a payment failed.
 
 ## Do's and Don'ts
 Do preserve financial precision, ownership boundaries, keyboard navigation and drafts. Do use synthetic data only in labeled examples. Do inspect rendered desktop, tablet and phone layouts.

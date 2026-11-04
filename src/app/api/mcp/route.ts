@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { appUrl } from "@/lib/app-url";
 
 /**
  * Remote MCP server — Streamable HTTP transport, JSON responses only.
@@ -124,7 +125,7 @@ const TOOLS = [
   {
     name: "invoiceflow_share_invoice",
     description:
-      "Get the payable Stripe Checkout link for an invoice. This is what you give a human so they can actually pay. Does not email anyone.",
+      "Get the public payment page link for an invoice that is SENT or OVERDUE (drafts cannot be shared). The page shows a Pay button when the account owner has connected Stripe. Does not email anyone.",
     inputSchema: {
       type: "object",
       properties: { id: str("Invoice id.") },
@@ -138,12 +139,10 @@ function isoDays(n: number): string {
   return new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
 }
 
-function selfBase(req: NextRequest): string {
-  const env = process.env.INVOICEFLOW_PUBLIC_URL?.replace(/\/+$/, "");
-  if (env) return env;
-  const proto = req.headers.get("x-forwarded-proto") ?? "https";
-  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
-  return `${proto}://${host}`;
+// A configured origin only. Request headers (Host, X-Forwarded-*) are caller
+// controlled and must never choose where this server sends a bearer key.
+function selfBase(): string {
+  return process.env.INVOICEFLOW_PUBLIC_URL?.replace(/\/+$/, "") || appUrl();
 }
 
 class ToolError extends Error {}
@@ -154,7 +153,7 @@ async function api(
   path: string,
   opts: { body?: Json; query?: Record<string, string | number | undefined> } = {}
 ): Promise<unknown> {
-  const url = new URL(selfBase(req) + path);
+  const url = new URL(selfBase() + path);
   for (const [k, v] of Object.entries(opts.query ?? {})) {
     if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, String(v));
   }

@@ -47,11 +47,13 @@ Revoke: `DELETE /api/keys/{id}` (session) — revocation is immediate.
 | `POST` | `/api/estimates/{id}/convert` | estimate → invoice |
 | `GET` | `/api/dashboard/stats` | aggregates |
 | `GET` | `/api/export/invoices`, `/api/export/clients` | CSV export |
+| `POST` | `/api/invoices/{id}/share` | public payment link for a `SENT` or `OVERDUE` invoice (drafts return 400) |
 
-**Session-only on purpose** — these send mail or mint public links, so they stay
-behind a human session even when a key is present:
-`/api/stripe/connect*`, `/api/settings/profile`, `/api/keys*`,
-`/api/invoices/{id}/send`, `/api/invoices/{id}/share`.
+
+**Session-only on purpose** — these send mail, bind accounts, buy plans or
+mint credentials, so they stay behind a human session even when a key is present:
+`/api/stripe/connect*`, `/api/settings/profile`, `/api/keys*`, `/api/billing/*`,
+`/api/invoices/{id}/send`.
 
 **Cron only** (secret header, not a key): `/api/cron/chase-invoices`,
 `/api/cron/generate-recurring`. `/api/webhooks/stripe` is signed by Stripe.

@@ -149,7 +149,7 @@ const TOOLS = [
   {
     name: "invoiceflow_share_invoice",
     description:
-      "Get the payable Stripe Checkout link for an invoice. This is what you give a human so they can actually pay. Does not email anyone.",
+      "Get the public payment page link for an invoice that is SENT or OVERDUE (drafts cannot be shared). The page shows a Pay button when the account owner has connected Stripe. Does not email anyone.",
     inputSchema: {
       type: "object",
       properties: { id: str("Invoice id.") },

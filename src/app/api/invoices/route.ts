@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireActivePlan } from "@/lib/plan-guard";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { lockOwner } from "@/lib/billing";
@@ -63,6 +64,8 @@ export async function POST(req: NextRequest) {
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const planRequired = await requireActivePlan(userId);
+  if (planRequired) return planRequired;
 
   try {
     const parsed = invoiceCreateSchema.safeParse(await req.json());

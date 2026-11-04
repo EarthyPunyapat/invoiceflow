@@ -79,12 +79,27 @@ async function main() {
       if (cli("migrate", "resolve", "--applied", baseline) !== 0) throw new Error("Could not record the verified baseline. Deployment stopped.");
     } else if (applied.length) {
       if (!applied.includes(baseline)) throw new Error("Database migration history is missing the required baseline. Review it before deployment.");
-      if (applied.length === migrations.length) {
+      // Applied history must be an ordered prefix of the committed migrations;
+      // Prisma would otherwise apply an older migration on top of newer ones.
+      const skipped = migrations.slice(0, applied.length).filter(name => !applied.includes(name));
+      if (skipped.length) {
+        throw new Error(`Database migration history is out of order: ${skipped.join(", ")} was never applied, but later migrations were. Review the database before deployment; no migration was applied.`);
+      }
+      const pending = migrations.slice(applied.length);
+      if (!pending.length) {
         verify("prisma/schema.prisma", "Database schema differs from its applied migration history. Review drift before deployment.");
-      } else if (applied.length === 1 && applied[0] === baseline) {
+      } else if (applied.length === 1) {
         verify("prisma/baseline.prisma", "Database schema differs from its recorded baseline. Review drift before deployment.");
       } else {
-        throw new Error("Database is at an unsupported intermediate migration state. Apply reviewed migrations explicitly before deployment.");
+        // The usual state when a release adds migrations. If the database
+        // already has the final schema, the pending SQL was run by hand without
+        // being recorded; Prisma would fail halfway and leave a failed migration.
+        console.log(`[database release] Pending migrations: ${pending.join(", ")}.`);
+        const code = cli("migrate", "diff", "--from-schema-datasource", "prisma/baseline.prisma", "--to-schema-datamodel", "prisma/schema.prisma", "--exit-code");
+        if (code === 0) {
+          throw new Error(`Database already contains the changes from ${pending.join(", ")}, but they were applied outside the release and are not recorded. After confirming the schema, record each one with \`prisma migrate resolve --applied <name>\` against the direct URL. No migration was applied.`);
+        }
+        if (code !== 2) throw new Error("Could not compare the database with the application schema. No migration was applied; inspect the Prisma error above.");
       }
     }
     console.log("[database release] Applying committed migrations.");

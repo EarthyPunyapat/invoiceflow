@@ -1,11 +1,17 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { PrismaClient } from "@prisma/client";
 
 const exec = promisify(execFile);
 const root = resolve(__dirname, "..");
+// Every committed migration, in the order Prisma applies them. Counts below are
+// derived from this list so adding a migration cannot silently stale the suite.
+const migrations = readdirSync(resolve(root, "prisma/migrations"), { withFileTypes: true })
+  .filter(entry => entry.isDirectory()).map(entry => entry.name).sort();
+const allMigrations = BigInt(migrations.length);
 const schemas: string[] = [];
 const clients: PrismaClient[] = [];
 let admin: PrismaClient;
@@ -47,6 +53,22 @@ async function legacy(url: string) {
   const result = await command("pnpm", ["exec", "prisma", "db", "execute", "--file", "prisma/migrations/202611010001_baseline/migration.sql", "--schema", "prisma/baseline.prisma"], url);
   expect(result.code, result.output).toBe(0);
 }
+async function prisma(url: string, ...args: string[]) {
+  const result = await command("pnpm", ["exec", "prisma", ...args], url);
+  expect(result.code, result.output).toBe(0);
+}
+// A database exactly as an earlier release left it: these migrations applied
+// through Prisma and recorded in its history, later ones still pending.
+async function releasedThrough(url: string, names: string[]) {
+  for (const name of names) {
+    await prisma(url, "db", "execute", "--file", `prisma/migrations/${name}/migration.sql`, "--schema", "prisma/schema.prisma");
+    await prisma(url, "migrate", "resolve", "--applied", name);
+  }
+}
+async function hasTable(db: PrismaClient, name: string) {
+  const rows = await db.$queryRaw<{ found: boolean }[]>`SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = ${name}) AS found`;
+  return rows[0].found;
+}
 async function oldInvoice(db: PrismaClient, number = "INV-OLD-0001", id = "old-invoice") {
   await db.$executeRaw`INSERT INTO "User" ("id", "email", "updatedAt") VALUES ('legacy-owner', 'legacy@example.test', NOW()) ON CONFLICT DO NOTHING`;
   await db.$executeRaw`INSERT INTO "Client" ("id", "userId", "name", "email", "updatedAt") VALUES ('legacy-client', 'legacy-owner', 'Existing client', 'client@example.test', NOW()) ON CONFLICT DO NOTHING`;
@@ -77,7 +99,7 @@ describe("Vercel production schema rollout", () => {
     const { db, url } = await fixture();
     const result = await gate(url);
     expect(result.code, result.output).toBe(0);
-    expect(await historyCount(db)).toBe(BigInt(2));
+    expect(await historyCount(db)).toBe(allMigrations);
     expect(await db.invoice.count()).toBe(0);
   }, 60_000);
   it("verifies and baselines the old schema, preserves data, and safely reruns", async () => {
@@ -95,7 +117,7 @@ describe("Vercel production schema rollout", () => {
     expect((await db.invoice.findMany()).map(row => row.id)).toEqual(["old-invoice"]);
     const second = await gate(url);
     expect(second.code, second.output).toBe(0);
-    expect(await historyCount(db)).toBe(BigInt(2));
+    expect(await historyCount(db)).toBe(allMigrations);
     expect(await db.invoice.count()).toBe(1);
   }, 60_000);
   it("refuses drift before recording the baseline or changing invoice data", async () => {
@@ -117,8 +139,43 @@ describe("Vercel production schema rollout", () => {
     const { db, url } = await fixture(); await legacy(url); await oldInvoice(db);
     const results = await Promise.all([gate(url), gate(url)]);
     for (const result of results) expect(result.code, result.output).toBe(0);
-    expect(await historyCount(db)).toBe(BigInt(2));
+    expect(await historyCount(db)).toBe(allMigrations);
     expect(await db.invoice.count()).toBe(1);
+  }, 60_000);
+  it("applies pending migrations to a database left by the previous release", async () => {
+    // The normal state of production whenever a release adds a migration.
+    const { db, url } = await fixture();
+    await releasedThrough(url, migrations.slice(0, -1));
+    await db.$executeRaw`INSERT INTO "User" ("id", "email", "updatedAt") VALUES ('existing-owner', 'owner@example.test', NOW())`;
+    const result = await gate(url);
+    expect(result.code, result.output).toBe(0);
+    expect(result.output).toContain("Database matches the application schema");
+    expect(await historyCount(db)).toBe(allMigrations);
+    expect(await db.user.count()).toBe(1);
+    const rerun = await gate(url);
+    expect(rerun.code, rerun.output).toBe(0);
+    expect(await historyCount(db)).toBe(allMigrations);
+  }, 60_000);
+  it("refuses pending migrations whose changes were already applied outside the release", async () => {
+    // e.g. a migration's SQL run by hand against production without recording it.
+    const { db, url } = await fixture();
+    await releasedThrough(url, migrations.slice(0, -1));
+    await prisma(url, "db", "execute", "--file", `prisma/migrations/${migrations.at(-1)}/migration.sql`, "--schema", "prisma/schema.prisma");
+    const result = await gate(url);
+    expect(result.code).not.toBe(0);
+    expect(result.output).toContain("applied outside the release");
+    expect(result.output).toContain(migrations.at(-1));
+    expect(await historyCount(db)).toBe(allMigrations - BigInt(1));
+  }, 60_000);
+  it("refuses migration history with a gap instead of applying migrations out of order", async () => {
+    const { db, url } = await fixture();
+    await prisma(url, "migrate", "resolve", "--applied", migrations[0]);
+    await prisma(url, "migrate", "resolve", "--applied", migrations.at(-1)!);
+    const result = await gate(url);
+    expect(result.code).not.toBe(0);
+    expect(result.output).toContain("out of order");
+    expect(await historyCount(db)).toBe(BigInt(2));
+    expect(await hasTable(db, "Invoice")).toBe(false);
   }, 60_000);
   it("rejects unknown migration history instead of treating another app's database as its own", async () => {
     const { db, url } = await fixture();

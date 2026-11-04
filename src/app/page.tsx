@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { InvoiceDemo } from "@/components/marketing/invoice-demo";
+import { SiteFooter } from "@/components/marketing/site-footer";
 import { Check, Plus, FileText, ArrowUpRight } from "lucide-react";
 import "./marketing.css";
 const questions = [
@@ -17,8 +18,8 @@ const questions = [
     a: "Yes. Every invoice can be downloaded as a PDF. You can also export your client and invoice records as CSV files.",
   },
   {
-    q: "Is this a paid subscription?",
-    a: "InvoiceFlow is currently in early access. There is no subscription checkout or plan billing. Stripe’s own processing fees apply when you accept a payment.",
+    q: "What does it cost?",
+    a: "Every account starts with a 14-day free trial, no card needed. After that, InvoiceFlow Pro is US$9 a month and you can cancel at any time. Stripe’s own processing fees apply when you accept a payment. Your existing invoices stay available and payable even if you stop subscribing.",
   },
 ];
 export default function HomePage() {
@@ -53,7 +54,7 @@ export default function HomePage() {
               <Link className="marketing-primary" href="/login">
                 Create your first invoice <Plus size={17} />
               </Link>
-              <span>For independent people and small teams.</span>
+              <span>Free for 14 days, then US$9/month.</span>
             </div>
           </div>
           <InvoiceDemo />
@@ -197,15 +198,9 @@ export default function HomePage() {
           </div>
         </section>
       </main>
-      <footer className="marketing-footer">
-        <Logo size={32} />
-        <p>Made for the work you do.</p>
-        <nav className="marketing-footer-links" aria-label="Footer">
-          <Link href="/api-docs">API for agents</Link>
-          <Link href="/jeb/">Jeb Memorial</Link>
-          <a href="#product">Back to top</a>
-        </nav>
-      </footer>
+      <SiteFooter>
+        <a href="#product">Back to top</a>
+      </SiteFooter>
     </div>
   );
 }

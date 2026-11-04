@@ -5,6 +5,7 @@ import { MobileHeader } from "./mobile-header";
 import { SidebarNav } from "./sidebar-nav";
 import { LogOut, Plus } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { PlanBanner } from "@/components/plan-banner";
 
 export default async function DashboardLayout({
   children,
@@ -64,7 +65,10 @@ export default async function DashboardLayout({
       </aside>
       <div className="workspace-content">
         <MobileHeader user={user} />
-        <main className="workspace-main">{children}</main>
+        <main className="workspace-main">
+          {user.id && <PlanBanner userId={user.id} />}
+          {children}
+        </main>
       </div>
     </div>
   );

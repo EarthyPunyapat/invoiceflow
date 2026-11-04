@@ -1,4 +1,5 @@
 import { ConflictError } from "@/lib/api-error";
+import { requireActivePlan } from "@/lib/plan-guard";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -29,6 +30,8 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   }
+  const planRequired = await requireActivePlan(userId);
+  if (planRequired) return planRequired;
 
   try {
     const estimate = await prisma.estimate.findFirst({

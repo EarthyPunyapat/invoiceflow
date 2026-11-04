@@ -21,6 +21,7 @@ const record = (entry) => appendFileSync(output, JSON.stringify(entry) + "\n");
 const accepted = new Map();
 const attempts = new Map();
 const sessions = new Map();
+const subscriptions = new Map();
 let sequence = 0;
 
 // Block unmatched provider calls so no test can send a real message or charge.
@@ -103,6 +104,27 @@ nock("https://api.stripe.com")
       payment_status: "unpaid",
       url: `https://checkout.stripe.com/c/pay/cs_browser_${sequence}`,
     };
+    if (values.mode === "subscription") {
+      // InvoiceFlow Pro: the fixture treats the subscription as paid at once,
+      // so returning to the success URL completes it.
+      const subscription = {
+        id: `sub_browser_${sequence}`,
+        object: "subscription",
+        status: "active",
+        customer: values.customer,
+        current_period_end: Math.floor(Date.now() / 1000) + 30 * 86400,
+        cancel_at_period_end: false,
+      };
+      subscriptions.set(subscription.id, subscription);
+      Object.assign(session, {
+        mode: "subscription",
+        status: "complete",
+        payment_status: "paid",
+        client_reference_id: values.client_reference_id,
+        customer: values.customer,
+        subscription,
+      });
+    }
     sessions.set(session.id, session);
     record({ kind: "checkout", id: session.id, values });
     return [200, session];
@@ -114,3 +136,46 @@ nock("https://api.stripe.com")
     200,
     sessions.get(new URL(request.url).pathname.split("/").pop()),
   ]);
+nock("https://api.stripe.com")
+  .persist()
+  .post("/v1/customers")
+  .reply(async (request) => {
+    const values = Object.fromEntries(new URLSearchParams(await request.text()));
+    const customer = { id: `cus_browser_${++sequence}`, object: "customer", email: values.email };
+    record({ kind: "customer", id: customer.id, values });
+    return [200, customer];
+  });
+nock("https://api.stripe.com")
+  .persist()
+  .get(/^\/v1\/subscriptions\/sub_browser_/)
+  .reply((request) => [
+    200,
+    subscriptions.get(new URL(request.url).pathname.split("/").pop()),
+  ]);
+nock("https://api.stripe.com")
+  .persist()
+  .get(/^\/v1\/subscriptions\?/)
+  .reply((request) => {
+    const customer = new URL(request.url).searchParams.get("customer");
+    const data = [...subscriptions.values()].filter((sub) => sub.customer === customer).reverse().slice(0, 1);
+    return [200, { object: "list", data, has_more: false }];
+  });
+nock("https://api.stripe.com")
+  .persist()
+  .get(/^\/v1\/billing_portal\/configurations/)
+  .reply(() => [200, { object: "list", data: [], has_more: false }]);
+nock("https://api.stripe.com")
+  .persist()
+  .post("/v1/billing_portal/configurations")
+  .reply(async (request) => {
+    record({ kind: "portal_configuration", values: Object.fromEntries(new URLSearchParams(await request.text())) });
+    return [200, { id: "bpc_browser", object: "billing_portal.configuration" }];
+  });
+nock("https://api.stripe.com")
+  .persist()
+  .post("/v1/billing_portal/sessions")
+  .reply(async (request) => {
+    const values = Object.fromEntries(new URLSearchParams(await request.text()));
+    record({ kind: "portal", values });
+    return [200, { id: "bps_browser", object: "billing_portal.session", url: "https://billing.stripe.com/p/session/browser" }];
+  });
