@@ -98,12 +98,14 @@ test("reviews the real workspace and public invoice at desktop, tablet and phone
         expect(label).not.toBeNull();
         expect(Math.abs((bar!.x + bar!.width / 2) - (label!.x + label!.width / 2))).toBeLessThan(2);
       }
+      const face = route.startsWith("/i/") ? "Archivo" : "Manrope";
       expect(
-        await page.evaluate(() =>
-          Array.from(document.fonts).some(
-            (font) =>
-              font.family.includes("Manrope") && font.status === "loaded",
-          ),
+        await page.evaluate(
+          (family) =>
+            Array.from(document.fonts).some(
+              (font) => font.family.includes(family) && font.status === "loaded",
+            ),
+          face,
         ),
       ).toBe(true);
       if (route === "/dashboard" && width === 1440) {
@@ -155,8 +157,7 @@ test("reviews the public site and login at desktop, tablet and phone widths", as
       expect(
         await page.evaluate(() =>
           Array.from(document.fonts).some(
-            (font) =>
-              font.family.includes("Manrope") && font.status === "loaded",
+            (font) => font.family.includes("Archivo") && font.status === "loaded",
           ),
         ),
       ).toBe(true);
@@ -173,7 +174,7 @@ test("reviews the public site and login at desktop, tablet and phone widths", as
   }
 });
 
-test("the invoice preview and FAQ respond to keyboard input with reduced motion", async ({
+test("the example docket and FAQ respond to keyboard input with reduced motion", async ({
   page,
   ownerId,
 }) => {
@@ -181,13 +182,20 @@ test("the invoice preview and FAQ respond to keyboard input with reduced motion"
   await page.context().clearCookies();
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
-  await page.getByRole("button", { name: "Paid", exact: true }).focus();
+  // Typing on the top copy carbons through to the canary copy you keep.
+  const billTo = page.getByLabel("Bill to");
+  await billTo.fill("Harbour Bakery");
+  await expect(page.getByRole("region", { name: "Your canary copy" })).toContainText("Harbour Bakery");
+  await page.getByRole("button", { name: "Tear off & send" }).focus();
   await page.keyboard.press("Space");
-  await expect(
-    page.getByRole("button", { name: "Paid", exact: true }),
-  ).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByText("Total paid", { exact: true })).toBeVisible();
-  await expect(page.locator(".demo-grand-total")).toContainText("$1,472.00");
+  const pay = page.getByRole("button", { name: "Client pays by card" });
+  await expect(pay).toBeFocused();
+  await expect(page.getByRole("form", { name: "Example invoice, top copy" })).toBeHidden();
+  await page.keyboard.press("Enter");
+  const canary = page.getByRole("region", { name: "Your canary copy" });
+  await expect(canary.getByText("Total paid", { exact: true })).toBeVisible();
+  await expect(canary.locator(".docket-total")).toContainText("$1,472.00");
+  await expect(page.getByRole("button", { name: "Write another" })).toBeFocused();
   await page.getByText("How do I get started?", { exact: true }).click();
   await expect(
     page.getByText(
@@ -195,9 +203,7 @@ test("the invoice preview and FAQ respond to keyboard input with reduced motion"
       { exact: false },
     ),
   ).toBeVisible();
-  await page
-    .getByRole("link", { name: "Create your first invoice", exact: false })
-    .click();
+  await page.getByRole("link", { name: "Start free — 14 days" }).first().click();
   await expect(page).toHaveURL(/\/login$/);
 });
 
@@ -232,6 +238,6 @@ test("mobile navigation opens, closes on Escape, routes to clients and signs out
     .click();
   await expect(page).toHaveURL(/\/login$/);
   await expect(
-    page.getByRole("heading", { name: "Make yourself at home." }),
+    page.getByRole("heading", { name: "Open your invoice book." }),
   ).toBeVisible();
 });

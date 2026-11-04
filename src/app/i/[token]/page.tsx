@@ -1,11 +1,12 @@
 import { stripeConfigured } from "@/lib/integration-config";
-import { Badge, statusVariant } from "@/components/ui/badge";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { isValidShareToken } from "@/lib/token";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { PayButton } from "./pay-button";
+import { docketFonts } from "@/components/docket/fonts";
+import "../../docket.css";
 
 interface InvoicePublicPageProps {
   params: Promise<{ token: string }>;
@@ -92,195 +93,139 @@ export default async function InvoicePublicPage({
     invoice.user.country,
   ].filter(Boolean);
 
+  const statusWord = invoice.status.charAt(0) + invoice.status.slice(1).toLowerCase();
+  const sheetStyle = accent ? ({ "--accent": accent } as React.CSSProperties) : undefined;
+
   return (
-    <main className="min-h-screen bg-gray-50 dark:bg-gray-950 py-10 px-4">
-      <div className="max-w-3xl mx-auto space-y-6">
-        {/* Branded header card */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 sm:p-8 overflow-hidden">
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 pb-5 border-b border-gray-200 dark:border-gray-800">
-            <div className="flex items-center gap-4">
+    <div className={`docket-site ${docketFonts}`}>
+      <main className="invoice-public">
+        <div className="inv-shadow">
+        <article className="invoice-sheet" style={sheetStyle}>
+          <header className="inv-head">
+            <div className="inv-from">
               {invoice.user.logoUrl && (
                 // eslint-disable-next-line @next/next/no-img-element -- issuer-uploaded external logo URL; next/image would need remotePatterns config
-                <img
-                  src={invoice.user.logoUrl}
-                  alt={businessName}
-                  className="w-14 h-14 rounded-lg object-cover"
-                />
+                <img src={invoice.user.logoUrl} alt={businessName} className="inv-logo" />
               )}
               <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                  {businessName}
-                </h1>
-                {addressParts.length > 0 && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs">
-                    {addressParts.join(", ")}
-                  </p>
-                )}
+                <h1>{businessName}</h1>
+                {addressParts.length > 0 && <p className="inv-address">{addressParts.join(", ")}</p>}
               </div>
             </div>
-            <div className="sm:text-right">
-              <p className="text-xs font-medium " style={{ color: accent }}>
-                Invoice
-              </p>
-              <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                {invoice.invoiceNumber}
-              </p>
+            <div className="inv-number">
+              <span className="ply-title">Invoice</span>
+              <span className="ply-serial">{invoice.invoiceNumber}</span>
             </div>
-          </div>
+          </header>
 
-          <div className="grid grid-cols-2 gap-6 pt-5">
+          <dl className="inv-meta">
             <div>
-              <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400  mb-2">
-                Bill To
-              </h3>
-              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                {invoice.client.name}
-              </p>
-              {invoice.client.company && (
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {invoice.client.company}
-                </p>
-              )}
-              <p className="break-all text-sm text-gray-500 dark:text-gray-400">
-                {invoice.client.email}
-              </p>
+              <dt>Bill to</dt>
+              <dd>
+                <strong>{invoice.client.name}</strong>
+                {invoice.client.company && <span>{invoice.client.company}</span>}
+                <span className="break-all">{invoice.client.email}</span>
+              </dd>
             </div>
             <div>
-              <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400  mb-2">
-                Due Date
-              </h3>
-              <p className="text-sm text-gray-900 dark:text-white">
-                {formatDate(invoice.dueDate)}
-              </p>
-              {invoice.sentAt && (
-                <p className="mt-2 flex items-center gap-2">
-                  <InvoiceStatusBadge status={invoice.status} />
-                </p>
-              )}
+              <dt>Due</dt>
+              <dd>
+                <strong>{formatDate(invoice.dueDate)}</strong>
+              </dd>
             </div>
-          </div>
+            <div>
+              <dt>Status</dt>
+              <dd>
+                <strong>{statusWord}</strong>
+              </dd>
+            </div>
+          </dl>
+
+          {(invoice.status === "PAID" || invoice.status === "OVERDUE") && (
+            <span className={`stamp inv-stamp is-${invoice.status.toLowerCase()}`} aria-hidden="true">
+              {statusWord}
+            </span>
+          )}
 
           {justPaid && !payable && invoice.status === "PAID" && (
-            <div className="mt-5 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 px-4 py-3 text-sm text-green-700 dark:text-green-400">
+            <p role="status" className="inv-notice is-paid">
               Payment received — thank you!
-            </div>
+            </p>
           )}
           {justPaid && payable && (
-            <div className="mt-5 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 px-4 py-3 text-sm text-blue-700 dark:text-blue-400">
+            <p role="status" className="inv-notice">
               Payment submitted — it will be confirmed shortly. Thank you!
-            </div>
+            </p>
           )}
-        </div>
 
-        {/* Line items */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="inv-table-wrap">
+            <table className="inv-table">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
-                  <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 ">
-                    Description
-                  </th>
-                  <th className="text-center px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400  w-20">
-                    Qty
-                  </th>
-                  <th className="text-right px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400  w-28">
-                    Price
-                  </th>
-                  <th className="text-right px-5 py-3 text-xs font-medium text-gray-500 dark:text-gray-400  w-28">
-                    Total
-                  </th>
+                <tr>
+                  <th scope="col">Description</th>
+                  <th scope="col" className="is-num is-detail">Qty</th>
+                  <th scope="col" className="is-num is-detail">Price</th>
+                  <th scope="col" className="is-num">Total</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+              <tbody>
                 {invoice.items.map((item) => (
                   <tr key={item.id}>
-                    <td className="px-5 py-3 text-sm text-gray-900 dark:text-white">
+                    <td>
                       {item.description}
+                      <span className="inv-item-calc">
+                        {item.quantity} × {formatCurrency(item.unitPrice, currency)}
+                      </span>
                     </td>
-                    <td className="px-5 py-3 text-sm text-gray-900 dark:text-white text-center">
-                      {item.quantity}
-                    </td>
-                    <td className="px-5 py-3 text-sm text-gray-900 dark:text-white text-right">
-                      {formatCurrency(item.unitPrice, currency)}
-                    </td>
-                    <td className="px-5 py-3 text-sm text-gray-900 dark:text-white text-right font-medium">
-                      {formatCurrency(item.total, currency)}
-                    </td>
+                    <td className="is-num is-detail">{item.quantity}</td>
+                    <td className="is-num is-detail">{formatCurrency(item.unitPrice, currency)}</td>
+                    <td className="is-num">{formatCurrency(item.total, currency)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          {/* Totals — total row carries the brand accent */}
-          <div
-            className="border-t-2 px-5 py-4 flex flex-col items-end space-y-1.5"
-            style={{ borderTopColor: accent }}
-          >
-            <div className="flex justify-between w-56 text-sm">
-              <span className="text-gray-500 dark:text-gray-400">Subtotal</span>
-              <span className="text-gray-900 dark:text-white">
-                {formatCurrency(invoice.subtotal, currency)}
-              </span>
+          <dl className="ply-totals inv-totals">
+            <div>
+              <dt>Subtotal</dt>
+              <dd>{formatCurrency(invoice.subtotal, currency)}</dd>
             </div>
             {invoice.tax > 0 && (
-              <div className="flex justify-between w-56 text-sm">
-                <span className="text-gray-500 dark:text-gray-400">
-                  Tax ({invoice.tax}%)
-                </span>
-                <span className="text-gray-900 dark:text-white">
-                  {formatCurrency(taxAmount, currency)}
-                </span>
+              <div>
+                <dt>Tax ({invoice.tax}%)</dt>
+                <dd>{formatCurrency(taxAmount, currency)}</dd>
               </div>
             )}
-            <div className="flex justify-between w-56 text-base font-bold pt-2 border-t border-gray-200 dark:border-gray-700">
-              <span className="text-gray-900 dark:text-white">Total</span>
-              <span style={accent ? { color: accent } : undefined}>
-                {formatCurrency(invoice.total, currency)}
-              </span>
+            <div className="docket-total">
+              <dt>{invoice.status === "PAID" ? "Total paid" : "Total"}</dt>
+              <dd>{formatCurrency(invoice.total, currency)}</dd>
             </div>
-          </div>
+          </dl>
+
+          {invoice.notes && (
+            <section className="inv-notes" aria-labelledby="inv-notes-heading">
+              <h2 id="inv-notes-heading">Notes</h2>
+              <p>{invoice.notes}</p>
+            </section>
+          )}
+
+          {payable && (
+            <div className="inv-pay">
+              {stripeConfigured() && invoice.user.stripeAccount ? (
+                <PayButton token={token} />
+              ) : (
+                <p role="status">
+                  Online payment is not enabled for this invoice. Contact {businessName} for payment
+                  instructions.
+                </p>
+              )}
+            </div>
+          )}
+        </article>
         </div>
-
-        {/* Notes */}
-        {invoice.notes && (
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
-            <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400  mb-2">
-              Notes
-            </h3>
-            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-              {invoice.notes}
-            </p>
-          </div>
-        )}
-
-        {/* Online payment CTA — only while the invoice is collectible */}
-        {payable && (
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 sm:p-6">
-            {stripeConfigured() && invoice.user.stripeAccount ? (
-              <PayButton token={token} />
-            ) : (
-              <p role="status" className="text-sm text-gray-600">
-                Online payment is not enabled for this invoice. Contact{" "}
-                {businessName} for payment instructions.
-              </p>
-            )}
-          </div>
-        )}
-
-        <p className="text-center text-xs text-gray-400 dark:text-gray-600">
-          Powered by InvoiceFlow
-        </p>
-      </div>
-    </main>
-  );
-}
-
-function InvoiceStatusBadge({ status }: { status: string }) {
-  return (
-    <Badge variant={statusVariant(status)}>
-      {status.charAt(0) + status.slice(1).toLowerCase()}
-    </Badge>
+        <p className="inv-powered">Powered by InvoiceFlow</p>
+      </main>
+    </div>
   );
 }

@@ -1,60 +1,37 @@
 import type { Metadata } from "next";
-import { auth, signIn } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Logo, LogoIcon } from "@/components/logo";
+import { redirect } from "next/navigation";
+import { auth, signIn } from "@/lib/auth";
+import { SiteHeader } from "@/components/docket/site-chrome";
+import { docketFonts } from "@/components/docket/fonts";
+import "../docket.css";
+
 export const metadata: Metadata = { title: "Sign in" };
+
 export default async function LoginPage() {
   const session = await auth();
   if (session?.user) redirect("/dashboard");
   return (
-    <main className="login-layout">
-      <section className="login-story">
-        <Link href="/" aria-label="InvoiceFlow home">
-          <Logo size={35} />
-        </Link>
-        <div>
-          <h2>
-            Less chasing.
-            <br />
-            More doing.
-          </h2>
-          <p>
-            A clear place for your clients, invoices and the work that comes
-            next.
-          </p>
-        </div>
-        <p className="text-sm">Made for independent work.</p>
-      </section>
-      <section className="login-action">
-        <Link href="/" className="login-mobile-logo">
-          <Logo size={32} />
-        </Link>
-        <div className="w-full max-w-[360px]">
-          <span className="mb-7 block text-primary-600">
-            <LogoIcon size={40} />
-          </span>
-          <h1 className="text-[32px] font-medium tracking-tight">
-            Make yourself at home.
-          </h1>
-          <p className="mt-4 text-[15px] leading-7 text-gray-600">
-            Sign in to your InvoiceFlow workspace.
-            <br />
-            Your clients and invoices are right here.
+    <div className={`docket-site signin-page ${docketFonts}`}>
+      <SiteHeader />
+      <main className="signin-main">
+        <section className="signin-slip">
+          <div className="perforation" aria-hidden="true" />
+          <div className="ply-head signin-serial">
+            <span className="ply-serial">No. 0001</span>
+          </div>
+          <h1>Open your invoice book.</h1>
+          <p className="signin-lede">
+            Your clients, invoices and payments are right where you left them.
           </p>
           <form
-            className="mt-9"
             action={async () => {
               "use server";
               await signIn("google", { redirectTo: "/dashboard" });
             }}
           >
-            <button
-              type="submit"
-              className="app-button h-12 w-full gap-3 border border-gray-300 bg-white px-5 text-sm text-gray-900 hover:bg-gray-50"
-            >
-              {" "}
-              <svg className="h-5 w-5" viewBox="0 0 24 24">
+            <button type="submit" className="signin-google">
+              <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
                 <path
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
                   fill="#4285F4"
@@ -75,26 +52,13 @@ export default async function LoginPage() {
               <span>Continue with Google</span>
             </button>
           </form>
-          <p className="mt-5 text-center text-xs leading-6 text-gray-500">
+          <p className="signin-fine">
             New here? Your workspace is created when you sign in, with 14 days
-            free. By continuing you agree to the{" "}
-            <Link href="/terms" className="underline underline-offset-2">
-              Terms
-            </Link>{" "}
-            and{" "}
-            <Link href="/privacy" className="underline underline-offset-2">
-              Privacy Policy
-            </Link>
-            .
+            free. By continuing you agree to the <Link href="/terms">Terms</Link>{" "}
+            and <Link href="/privacy">Privacy Policy</Link>.
           </p>
-          <Link
-            href="/"
-            className="mt-10 inline-block text-sm text-gray-600 underline-offset-4 hover:underline"
-          >
-            Back to InvoiceFlow
-          </Link>
-        </div>
-      </section>
-    </main>
+        </section>
+      </main>
+    </div>
   );
 }

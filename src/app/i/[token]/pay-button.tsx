@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { CreditCard, Loader2 } from "lucide-react";
 
 interface PayButtonProps {
@@ -43,21 +42,17 @@ export function PayButton({ token }: PayButtonProps) {
   };
 
   return (
-    <div className="space-y-2">
-      <Button
-        onClick={handlePay}
-        disabled={loading}
-        className="w-full sm:w-auto"
-      >
+    <div className="pay-area">
+      <button type="button" onClick={handlePay} disabled={loading} className="stub-button pay-stub">
         {loading ? (
-          <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+          <Loader2 className="pay-icon animate-spin" aria-hidden="true" />
         ) : (
-          <CreditCard className="w-4 h-4 mr-1.5" />
+          <CreditCard className="pay-icon" aria-hidden="true" />
         )}
         {loading ? "Redirecting…" : "Pay now"}
-      </Button>
+      </button>
       {notice && (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+        <p role="alert" className="pay-notice">
           {notice}
         </p>
       )}
