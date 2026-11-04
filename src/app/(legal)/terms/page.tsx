@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LEGAL } from "@/lib/legal";
+import { PRO_PLAN } from "@/lib/plan";
 import { SupportContact } from "../support-contact";
 
 export const metadata: Metadata = { title: "Terms of service" };
@@ -31,7 +32,7 @@ export default function TermsPage() {
       <h2>Free trial and price</h2>
       <ul>
         <li>Every new account gets a 14-day free trial. No card is needed to start.</li>
-        <li>After the trial, InvoiceFlow Pro costs US$9/month, billed monthly in advance through Stripe.</li>
+        <li>After the trial, {PRO_PLAN.name} costs {PRO_PLAN.label}, billed monthly in advance through Stripe.</li>
         <li>Your subscription renews automatically each month until you cancel.</li>
         <li>You can cancel at any time in Settings. Cancellation takes effect at the end of the period you have paid for.</li>
         <li>We do not refund partial months, except where the law requires it.</li>

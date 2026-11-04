@@ -11,7 +11,7 @@ datasource db {
 // ─── NextAuth Models ─────────────────────────────────────────────
 
 model User {
-  apiKeys ApiKey[]
+  apiKeys       ApiKey[]
   id            String    @id @default(cuid())
   name          String?
   email         String?   @unique
@@ -19,16 +19,25 @@ model User {
   image         String?
 
   // Business profile (branding & invoice customization)
-  businessName String?
-  addressLine1 String?
-  addressLine2 String?
-  city         String?
-  state        String?
-  postalCode   String?
-  country      String?
-  logoUrl      String?
-  accentColor  String?
+  businessName  String?
+  addressLine1  String?
+  addressLine2  String?
+  city          String?
+  state         String?
+  postalCode    String?
+  country       String?
+  logoUrl       String?
+  accentColor   String?
   invoicePrefix String?
+
+  // InvoiceFlow Pro subscription (spec D1–D6). Stripe is the source of truth;
+  // these fields cache it and are refreshed lazily.
+  trialEndsAt                   DateTime?
+  stripeCustomerId              String?   @unique
+  stripeSubscriptionId          String?   @unique
+  subscriptionStatus            String?
+  subscriptionPeriodEnd         DateTime?
+  subscriptionCancelAtPeriodEnd Boolean   @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -89,8 +98,8 @@ model Client {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  invoices Invoice[]
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invoices          Invoice[]
   recurringInvoices RecurringInvoice[]
   estimates         Estimate[]
 
@@ -106,22 +115,22 @@ enum InvoiceStatus {
 }
 
 model Invoice {
-  id            String        @id @default(cuid())
-  userId        String
-  clientId      String
-  invoiceNumber String
-  shareToken    String?       @unique
-  checkoutSessionId String?   @unique
-  checkoutAttempt Int        @default(0)
-  stripeInvoiceId String?    @unique
-  paymentNotifiedAt DateTime?
-  invoiceEmailedAt DateTime?
-  status        InvoiceStatus @default(DRAFT)
-  subtotal      Float
-  tax           Float         @default(0)
-  total         Float
-  currency      String        @default("USD")
-  dueDate       DateTime
+  id                 String        @id @default(cuid())
+  userId             String
+  clientId           String
+  invoiceNumber      String
+  shareToken         String?       @unique
+  checkoutSessionId  String?       @unique
+  checkoutAttempt    Int           @default(0)
+  stripeInvoiceId    String?       @unique
+  paymentNotifiedAt  DateTime?
+  invoiceEmailedAt   DateTime?
+  status             InvoiceStatus @default(DRAFT)
+  subtotal           Float
+  tax                Float         @default(0)
+  total              Float
+  currency           String        @default("USD")
+  dueDate            DateTime
   sentAt             DateTime?
   paidAt             DateTime?
   lastReminderSentAt DateTime?
@@ -134,17 +143,17 @@ model Invoice {
   client Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
   items  InvoiceItem[]
 
+  @@unique([userId, invoiceNumber])
   @@index([userId])
   @@index([clientId])
   @@index([status, dueDate])
-  @@unique([userId, invoiceNumber])
 }
 
 model InvoiceItem {
-  id          String  @id @default(cuid())
+  id          String   @id @default(cuid())
   invoiceId   String
   description String
-  quantity    Int     @default(1)
+  quantity    Int      @default(1)
   unitPrice   Float
   total       Float
   createdAt   DateTime @default(now())
@@ -155,10 +164,10 @@ model InvoiceItem {
 }
 
 model StripeAccount {
-  id                              String  @id @default(cuid())
-  userId                          String  @unique
-  stripeAccountId                 String  @unique
-  stripeConnectOnboardingComplete Boolean @default(false)
+  id                              String   @id @default(cuid())
+  userId                          String   @unique
+  stripeAccountId                 String   @unique
+  stripeConnectOnboardingComplete Boolean  @default(false)
   createdAt                       DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -229,10 +238,10 @@ model Estimate {
 }
 
 model EstimateItem {
-  id          String  @id @default(cuid())
+  id          String   @id @default(cuid())
   estimateId  String
   description String
-  quantity    Int     @default(1)
+  quantity    Int      @default(1)
   unitPrice   Float
   total       Float
   createdAt   DateTime @default(now())
